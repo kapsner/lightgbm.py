@@ -30,5 +30,6 @@ Suggests:
     lintr,
     rmarkdown,
     qpdf,
-    knitr
+    knitr,
+    mlbench
 RoxygenNote: 7.0.1

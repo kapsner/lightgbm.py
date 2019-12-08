@@ -22,6 +22,25 @@ LightgbmTrain <- R6::R6Class(
     classes = NULL,
     label_names = NULL,
 
+    transform_features = function(data_matrix) {
+      for (i in seq_len(ncol(data_matrix))) {
+        transf <- tryCatch(
+          expr = {
+            ret <- as.numeric(as.character(data_matrix[, i]))
+            ret
+          }, warning = function(e) {
+            ret <- as.numeric(factor(data_matrix[, i]))
+            ret
+          }, finally = function(f) {
+            return(ret)
+          }
+        )
+        data_matrix[, i] <- transf
+        data_matrix[which(is.na(data_matrix[, i])), i] <- NaN
+      }
+      return(data_matrix)
+    },
+
     transform_target = function(vector) {
 
       # transform target to numeric for classification tasks
@@ -34,7 +53,9 @@ LightgbmTrain <- R6::R6Class(
           vector <- (as.numeric(vector) - 1L)
 
           # if target is numeric and integer
-        } else if (is.integer(vector)) {
+        } else if (is.integer(vector) || is.numeric(vector)) {
+
+          vector <- as.integer(vector)
 
           # check, if minimum != 0 --> if == 0, we have nothing to do
           if (min(vector) != 0) {
@@ -185,7 +206,7 @@ LightgbmTrain <- R6::R6Class(
 
       self$dataset[, (self$target_names) := private$transform_target(
         get(self$target_names)
-        )]
+      )]
 
       private$validation_split <- validation_split
 
@@ -262,9 +283,8 @@ LightgbmTrain <- R6::R6Class(
       x_train <- as.matrix(self$train_data)
       # convert Missings to NaN, otherwise they wil be transformed
       # wrong to python/ an error occurs
-      for (i in colnames(x_train)) {
-        x_train[which(is.na(x_train[, i])), i] <- NaN
-      }
+      x_train <- private$transform_features(x_train)
+
       x_label <- self$train_label
       private$label_names <- unique(x_label)
 
@@ -276,9 +296,8 @@ LightgbmTrain <- R6::R6Class(
 
       if (!is.null(self$valid_data)) {
         x_valid <- as.matrix(self$valid_data)
-        for (i in colnames(x_valid)) {
-          x_valid[which(is.na(x_valid[, i])), i] <- NaN
-        }
+        x_valid <- private$transform_features(x_valid)
+
         x_label_valid <- self$valid_label
 
         # python lightgbm$Dataset
@@ -320,28 +339,33 @@ LightgbmTrain <- R6::R6Class(
       pred_data <- newdata[, self$feature_names, with = F] # get newdata
       # transform it
       x_test <- as.matrix(pred_data)
+      x_test <- private$transform_features(x_test)
+
       for (i in colnames(x_test)) {
         x_test[which(is.na(x_test[, i])), i] <- NaN
       }
 
-      probs <- self$model$predict(
-        data = x_test,
-        is_reshape = T
-      )
-      colnames(probs) <- as.character(unique(private$label_names))
+      probs <- self$model$predict(data = x_test)
 
-      classes <- sapply(seq_len(nrow(probs)), function(x) {
-        ret <- colnames(probs)[which(probs[x, ] ==
-                                             max(probs[x, ]))]
-        return(as.integer(ret))
-      })
+      if (self$parameters[["objective"]] %in%
+          c("multiclass", "multiclassova", "lambdarank")) {
+        colnames(probs) <- as.character(unique(private$label_names))
 
-      private$classes <- classes
+        private$classes <- sapply(seq_len(nrow(probs)), function(x) {
+          ret <- colnames(probs)[which(probs[x, ] ==
+                                         max(probs[x, ]))]
+          return(as.integer(ret))
+        })
 
-      return(
-        list("probabilities" = probs,
-             "classes" = classes)
-      )
+
+      } else if (self$parameters[["objective"]] == "binary") {
+        private$classes <- as.integer(ifelse(probs > 0.5, 1, 0))
+      }
+
+      return(list(
+        "probabilities" = probs,
+        "classes" = private$classes
+      ))
     },
 
     #' @description The confusion matrix function.
@@ -359,7 +383,7 @@ LightgbmTrain <- R6::R6Class(
       return(caret::confusionMatrix(
         data = factor(private$classes),
         reference = factor(reference)
-        ))
+      ))
     },
 
     # Add method for importance, if learner supports that.

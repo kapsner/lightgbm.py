@@ -23,7 +23,7 @@ test_that(
           list(message = "cyclomatic complexity", line_number = 14),
           list(message = "snake_case", line_number = 14)
         ),
-        "utils.R" = NULL
+        "utils.R" = "snake_case"
       ),
       "tests/testthat" = list(
         "test-lints.R" = NULL

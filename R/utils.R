@@ -1,11 +1,6 @@
-#% .onLoad = function(libname, pkgname) {
-#%
-#%   # use superassignment to update global reference to lightgbm
-#%   reticulate::py_config()
-#%   if (isFALSE(reticulate::py_module_available("lightgbm"))) {
-#%     reticulate::py_install("lightgbm", method = "auto", conda = "auto")
-#%   }
-#% }
+.onLoad <- function(libname, pkgname) {
+  reticulate::py_config()
+}
 
 #' @title Install lightgbm python module via reticulate.
 #'
