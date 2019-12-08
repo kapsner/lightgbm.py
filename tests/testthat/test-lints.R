@@ -25,7 +25,7 @@ test_that(
         ),
         "utils.R" = list(
           list(message = "snake_case", line_number = 1),
-          list(message = "lightgbm", line_number = 9)
+          list(message = "lightgbm", line_number = 3)
         )
       ),
       "tests/testthat" = list(
