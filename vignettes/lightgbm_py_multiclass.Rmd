@@ -1,0 +1,134 @@
+---
+title: "lightgbm.py: Multiclass Classification Example"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{lightgbm_py_multiclass}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(lightgbm.py)
+```
+
+# Install the package
+
+```{r}
+lightgbm.py::install_py_lightgbm()
+```
+
+
+# Load and prepare data
+
+The data must be provided as a `data.table` object. To simplify the subsequent steps, the target column name and the ID column name are stored in the objects `target_col` and `id_col`, respectively. 
+
+```{r}
+data("iris")
+dataset <- data.table::as.data.table(iris)
+target_col <- "Species"
+id_col <- NULL
+```
+
+To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures are stratified sampling. 
+
+```{r}
+set.seed(17)
+train_index <- caret::createDataPartition(
+  y = dataset[, get(target_col)],
+  times = 1,
+  p = 0.7
+)[[1]]
+
+# test index
+test_index <- setdiff(1:nrow(dataset), train_index)
+```
+
+# Instantiate lgb_learner 
+
+Initially, the LightgbmTrain class needs to be instantiated: 
+
+```{r}
+lgb_learner <- LightgbmTrain$new(
+  dataset = dataset[train_index, ],
+  target_col = target_col,
+  id_col = id_col
+)
+```
+
+# Prepare learner 
+
+Next, the learner parameters need to be set. At least, the `objective` parameter needs to be provided! Almost all possible parameters have been implemented here. You can inspect them using the following command: 
+
+```{r}
+lgb_learner$param_set
+```
+
+Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details on these parameters.  
+
+```{r}
+lgb_learner$param_set$values <- list(
+  "objective" = "multiclass",
+  "learning_rate" = 0.01,
+  "seed" = 17L
+)
+```
+
+When we have set the learner's objective, we can perform the data preprocessing step by using the learner's function `data_preprocessing`. This function takes two arguments, `validation_split` (default = 0.7) and `split_seed` (defaul: NULL). 
+`validation_split` can be set in order to further split the training data and evaluate the model performance during training against the validation set. The allowed value range is 0 < validation_split <= 1. This parameter can also be set to "1", taking the whole training data for validation during the model training. For reproducibility, please use the `split_seed` argument. 
+
+```{r}
+lgb_learner$data_preprocessing(validation_split = 0.7, split_seed = 2)
+```
+
+# Train learner
+
+We can now train the learner by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
+
+```{r}
+lgb_learner$train(
+  num_boost_round = 10000,
+  early_stopping_rounds = 1000
+)
+```
+
+# Evaluate Model Performance
+
+Basic values can be assesed directly from the model: 
+
+```{r}
+lgb_learner$model$best_iteration
+lgb_learner$model$best_score
+```
+
+The learner's `predict` function returns a list object, which consists of the predicted probabilities for each class and the predicted class labels: 
+
+```{r}
+predictions <- lgb_learner$predict(newdata = dataset[test_index,])
+head(predictions$probabilities)
+```
+
+A confusion matrix can be calculated using the learner's function `confusion_matrix`: 
+
+```{r}
+lgb_learner$confusion_matrix(
+  y_true = dataset[test_index, get(lgb_learner$target_names)]
+)
+```
+
+The variable importance plot can be calculated by using the learner's `importance` function: 
+
+```{r}
+imp <- lgb_learner$importance()
+imp$raw_values
+imp$plot
+```
+
