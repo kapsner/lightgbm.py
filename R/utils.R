@@ -11,12 +11,32 @@
 #' @export
 #'
 install_py_lightgbm <- function() {
-  reticulate::py_config()
+
+  tryCatch(
+    expr = {
+      reticulate::py_config()
+    }, error = function(e) {
+      print(e)
+      tryCatch(
+        expr = {
+          reticulate::use_python(Sys.which("python3"))
+          reticulate::py_config()
+        }, error = function(e) {
+          stop(e)
+        }
+      )
+    }
+  )
 
   if (reticulate::py_available()) {
-    reticulate::py_config()
-    if (isFALSE(reticulate::py_module_available("lightgbm"))) {
-      reticulate::py_install("lightgbm", method = "auto", conda = "auto")
+    if (!reticulate::py_module_available("lightgbm")) {
+      tryCatch(
+        expr = {
+          reticulate::py_install("lightgbm", method = "auto", conda = "auto")
+        }, error = function(e) {
+          stop(e)
+        }
+      )
     }
   } else {
     stop(paste0("Python is not available. Please install python ",

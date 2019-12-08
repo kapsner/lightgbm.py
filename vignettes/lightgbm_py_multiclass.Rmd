@@ -22,6 +22,8 @@ library(lightgbm.py)
 
 # Install the package
 
+Make sure, python3 and virtualenv are installed.
+
 ```{r}
 lightgbm.py::install_py_lightgbm()
 ```
