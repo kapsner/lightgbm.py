@@ -76,12 +76,14 @@ usethis::use_package("caret", type="Imports")
 # Suggests
 usethis::use_package("testthat", type = "Suggests")
 usethis::use_package("lintr", type = "Suggests")
+usethis::use_package("grDevices", type = "Suggests")
+usethis::use_package("knitr", type = "Suggests")
 
 # dev packages
 devtools::install_github(repo = "rstudio/reticulate", ref = "master", upgrade = "always")
 #usethis::use_dev_package("rBiasCorrection", type = "Imports")
 # https://cran.r-project.org/web/packages/devtools/vignettes/dependencies.html
-desc::desc_set_remotes("github::rstudio/reticulate@master", file = usethis::proj_get())
+desc::desc_set_remotes("rstudio/reticulate", file = usethis::proj_get())
 
 # for vignettes
 usethis::use_package("rmarkdown", type = "Suggests")

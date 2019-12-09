@@ -27,10 +27,11 @@ Imports:
 Suggests: 
     testthat,
     lintr,
+    grDevices,
+    knitr,
     rmarkdown,
     qpdf,
-    knitr,
     mlbench
 Remotes: 
-    github::rstudio/reticulate@master
+    rstudio/reticulate
 RoxygenNote: 7.0.1

@@ -70,7 +70,7 @@ lgb_learner <- LightgbmTrain$new(
 
 Next, the learner parameters need to be set. At least, the `objective` parameter needs to be provided! Almost all possible parameters have been implemented here. You can inspect them using the following command: 
 
-```{r}
+```{r eval=FALSE}
 lgb_learner$param_set
 ```
 
@@ -131,6 +131,18 @@ The variable importance plot can be calculated by using the learner's `importanc
 ```{r}
 imp <- lgb_learner$importance()
 imp$raw_values
-imp$plot
+```
+
+```{r out.width='80%'}
+filename <- "./imp_plot_multiclass.png"
+grDevices::png(
+    filename = filename,
+    res = 150,
+    height = 1000,
+    width = 1500
+  )
+print(imp$plot)
+grDevices::dev.off()
+knitr::include_graphics(filename)
 ```
 

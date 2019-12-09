@@ -10,8 +10,6 @@ A wrapper around the lightgbm.train python class.
 \url{https://lightgbm.readthedocs.io}
 }
 \seealso{
-\code{\link{reticulate}}
-
 \code{\link[caret]{confusionMatrix}}
 }
 \section{Public fields}{

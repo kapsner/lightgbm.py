@@ -4,12 +4,12 @@
 #'
 #' @references \url{https://lightgbm.readthedocs.io}
 #'
-#' @seealso \code{\link{reticulate}}
 #'
 #' @import data.table
 #' @import paradox
 #'
 #' @export
+#% @seealso \code{\link{rstudio/reticulate}}
 LightgbmTrain <- R6::R6Class(
   classname = "LightgbmTrain",
 
