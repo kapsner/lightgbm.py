@@ -23,7 +23,10 @@ library(mlbench)
 
 # Install the package
 
-Make sure, python3 and virtualenv are installed.
+Make sure, the reticulate package is configured well on your system.
+
+Use the function `install_py_lightgbm` in order to install the lightgbm python module. This function will first look, if the reticulate package is configured well and if the python module `lightgbm` is aready present. If not, it is automatically installed. 
+If the configuration of reticulate is bad or any other error occurs, a `miniconda` environment is installed and configured to be used with this package.
 
 ```{r}
 lightgbm.py::install_py_lightgbm()

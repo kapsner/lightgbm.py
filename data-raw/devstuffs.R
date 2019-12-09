@@ -69,13 +69,20 @@ usethis::use_package("R", min_version = "2.10", type = "Depends")
 usethis::use_package("data.table", type="Imports")
 usethis::use_package("R6", type="Imports")
 usethis::use_package("ggplot2", type="Imports")
-usethis::use_package("reticulate", type="Imports")
+#usethis::use_package("reticulate", type="Imports")
 usethis::use_package("paradox", type="Imports")
 usethis::use_package("caret", type="Imports")
 
 # Suggests
 usethis::use_package("testthat", type = "Suggests")
 usethis::use_package("lintr", type = "Suggests")
+
+# dev packages
+devtools::install_github(repo = "rstudio/reticulate", ref = "master", upgrade = "always")
+#usethis::use_dev_package("rBiasCorrection", type = "Imports")
+# https://cran.r-project.org/web/packages/devtools/vignettes/dependencies.html
+desc::desc_set_remotes("github::rstudio/reticulate@master", file = usethis::proj_get())
+
 # for vignettes
 usethis::use_package("rmarkdown", type = "Suggests")
 usethis::use_package("qpdf", type = "Suggests")

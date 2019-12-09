@@ -20,8 +20,8 @@ test_that(
       "R" = list(
         "lgbparams.R" = NULL,
         "lightgbm_train.R" = list(
-          list(message = "cyclomatic complexity", line_number = 14),
-          list(message = "snake_case", line_number = 14)
+          list(message = "cyclomatic complexity", line_number = 13),
+          list(message = "snake_case", line_number = 13)
         ),
         "utils.R" = NULL #%list(
           #% list(message = "snake_case", line_number = 1),

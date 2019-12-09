@@ -8,7 +8,6 @@
 #'
 #' @import data.table
 #' @import paradox
-#' @import reticulate
 #'
 #' @export
 LightgbmTrain <- R6::R6Class(
@@ -168,7 +167,6 @@ LightgbmTrain <- R6::R6Class(
         is.character(target_col),
         is.character(id_col) || is.null(id_col),
         target_col %in% colnames(dataset),
-        reticulate::py_available(),
         reticulate::py_module_available("lightgbm")
       )
 

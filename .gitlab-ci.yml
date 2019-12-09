@@ -9,8 +9,6 @@ default:
   image: ${CI_IMAGE_NAME}:${CI_IMAGE_TAG}
   before_script:
     - echo "options('repos' = 'https://ftp.fau.de/cran/')" >> /usr/local/lib/R/etc/Rprofile.site
-    - apt-get update && apt-get install -y --no-install-recommends python3 python3-pip
-    - pip3 install virtualenv
     - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')"
     - mkdir -p ci
 
