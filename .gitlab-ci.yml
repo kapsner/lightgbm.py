@@ -142,6 +142,8 @@ compile_vignette:
   stage: vignette
   script:
     - R -e "devtools::install(pkg = '.', upgrade = 'always')"
+    - R -e "reticulate::install_miniconda(path = reticulate::miniconda_path(), update = TRUE, force = FALSE)"
+    - R -e "reticulate::py_config()"
     - R -e "lightgbm.py::install_py_lightgbm()"
     - R -e "devtools::build_vignettes(pkg = '.', clean = FALSE)"
   artifacts:

@@ -69,6 +69,7 @@ usethis::use_package("R", min_version = "2.10", type = "Depends")
 usethis::use_package("data.table", type="Imports")
 usethis::use_package("R6", type="Imports")
 usethis::use_package("ggplot2", type="Imports")
+usethis::use_package("viridis", type="Imports")
 #usethis::use_package("reticulate", type="Imports")
 usethis::use_package("paradox", type="Imports")
 usethis::use_package("caret", type="Imports")
@@ -126,3 +127,4 @@ usethis::use_git_ignore("!/.Rbuildignore")
 
 # lint package
 #lintr::lint_package()
+

@@ -22,8 +22,10 @@ Imports:
     data.table,
     R6,
     ggplot2,
+    viridis,
     paradox,
     caret,
+    e1071,
     reticulate (>= 1.13.0.9006)
 Suggests: 
     testthat,
