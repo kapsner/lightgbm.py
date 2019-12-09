@@ -29,6 +29,10 @@ Suggests:
     testthat,
     lintr,
     grDevices,
-    knitr
+    knitr,
+    rmarkdown,
+    qpdf,
+    mlbench
 Remotes: 
-    github::rstudio/reticulate
+    github::rstudio/reticulate@master
+RoxygenNote: 7.0.2

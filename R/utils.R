@@ -91,7 +91,7 @@ install_py_lightgbm <- function() {
         message(paste0("Test, if module '", package, "' is already installed"))
         if (!reticulate::py_module_available(package)) {
           cat(paste0("Module not yet installed.... trying to install '",
-          package, "'"))
+                     package, "'"))
 
           if (trying == "conda") {
             reticulate::conda_install(
@@ -137,10 +137,15 @@ install_py_lightgbm <- function() {
         required = TRUE
       )
       reticulate::py_config()
-      message("Test, if module 'lightgbm' is already installed")
-      if (!reticulate::py_module_available("lightgbm")) {
-        message("Module not yet installed.... trying to install 'lightgbm'")
-        reticulate::conda_install(packages = "lightgbm")
+      message(paste0("Test, if module '", package,
+                     "' is already installed"))
+      if (!reticulate::py_module_available(package)) {
+        message(paste0("Module not yet installed.... trying to install '",
+                       package, "'"))
+        reticulate::conda_install(
+          envname = reticulate::miniconda_path(),
+          packages = package
+        )
       } else {
         message("Module 'lightgbm' is already installed")
       }
