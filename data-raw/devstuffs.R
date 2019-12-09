@@ -72,6 +72,7 @@ usethis::use_package("ggplot2", type="Imports")
 #usethis::use_package("reticulate", type="Imports")
 usethis::use_package("paradox", type="Imports")
 usethis::use_package("caret", type="Imports")
+usethis::use_package("e1071", type="Imports")
 
 # Suggests
 usethis::use_package("testthat", type = "Suggests")

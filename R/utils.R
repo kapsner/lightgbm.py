@@ -17,11 +17,10 @@ install_py_lightgbm <- function() {
   tryCatch(
     expr = {
       message("Testing, if 'reticulate' is already configured")
-      reticulate::py_config()
 
       testing_vector <- c()
 
-      for (trying in c("conda", "python", "virtualenv")) {
+      for (trying in c("miniconda", "conda", "python", "virtualenv")) {
 
         if (trying == "conda") {
           ret <- tryCatch(
@@ -29,6 +28,24 @@ install_py_lightgbm <- function() {
               message("Trying to use conda")
               reticulate::use_condaenv(
                 required = T
+              )
+              ret <- TRUE
+              ret
+            }, error = function(e) {
+              print(e)
+              ret <- FALSE
+              ret
+            }, finally = function(f) {
+              return(ret)
+            }
+          )
+        } else if (trying == "miniconda") {
+          ret <- tryCatch(
+            expr = {
+              message("Trying to use miniconda")
+              reticulate::use_miniconda(
+                condaenv = reticulate::miniconda_path(),
+                required = TRUE
               )
               ret <- TRUE
               ret
@@ -98,6 +115,12 @@ install_py_lightgbm <- function() {
               packages = package,
               conda = "auto"
             )
+          } else if (trying == "miniconda") {
+            reticulate::conda_install(
+              envname = reticulate::miniconda_path(),
+              packages = package,
+              conda = "auto"
+            )
           } else if (trying == "virtualenv") {
             reticulate::virtualenv_install(
               packages = package
@@ -144,7 +167,8 @@ install_py_lightgbm <- function() {
                        package, "'"))
         reticulate::conda_install(
           envname = reticulate::miniconda_path(),
-          packages = package
+          packages = package,
+          conda = "auto"
         )
       } else {
         message("Module 'lightgbm' is already installed")

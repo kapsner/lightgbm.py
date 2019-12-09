@@ -141,6 +141,8 @@ install:
 compile_vignette:
   stage: vignette
   script:
+    - R -e "devtools::install(pkg = '.', upgrade = 'always')"
+    - R -e "lightgbm.py::install_py_lightgbm()"
     - R -e "devtools::build_vignettes(pkg = '.', clean = FALSE)"
   artifacts:
     paths:
