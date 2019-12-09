@@ -16,7 +16,7 @@ my_desc$set_authors(c(
 ))
 
 # Set copyright
-my_desc$set("Copyright", "Name1 Surname1")
+my_desc$set("Copyright", "Lorenz Kapsner")
 
 # Remove some author fields
 my_desc$del("Maintainer")
@@ -81,9 +81,10 @@ usethis::use_package("knitr", type = "Suggests")
 
 # dev packages
 devtools::install_github(repo = "rstudio/reticulate", ref = "master", upgrade = "always")
+usethis::use_dev_package("reticulate", type = "Imports")
 #usethis::use_dev_package("rBiasCorrection", type = "Imports")
 # https://cran.r-project.org/web/packages/devtools/vignettes/dependencies.html
-desc::desc_set_remotes("rstudio/reticulate", file = usethis::proj_get())
+desc::desc_set_remotes("github::rstudio/reticulate@master", file = usethis::proj_get())
 
 # for vignettes
 usethis::use_package("rmarkdown", type = "Suggests")
