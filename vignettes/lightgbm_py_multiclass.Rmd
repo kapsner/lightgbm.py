@@ -50,18 +50,24 @@ target_col <- "Species"
 id_col <- NULL
 ```
 
-To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures are stratified sampling. 
+To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures a stratified sampling. 
 
 ```{r}
-set.seed(17)
-train_index <- caret::createDataPartition(
-  y = dataset[, get(target_col)],
-  times = 1,
-  p = 0.7
-)[[1]]
+sklearn <- reticulate::import("sklearn.model_selection")
+traintest_split <- sklearn$train_test_split(
+  dataset[,-(target_col), with = F],
+  dataset[, get(target_col)],
+  stratify = dataset[, get(target_col)],
+  train_size = 0.7,
+  random_state = 17L
+)
 
-# test index
-test_index <- setdiff(1:nrow(dataset), train_index)
+train_test_split <- function(dataset, target_col, split, seed) {
+  
+}
+d_train <- data.table::data.table(
+  cbind(traintest_split[[1]], eval(target_col) = traintest_split[[3]])
+)
 ```
 
 # Instantiate lgb_learner 

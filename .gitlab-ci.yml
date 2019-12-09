@@ -5,11 +5,11 @@ variables:
   CI_IMAGE_TAG: "3.6.1"
   R_PKG_NAME: "lightgbm.py"
 
+
 default:
   image: ${CI_IMAGE_NAME}:${CI_IMAGE_TAG}
   before_script:
     - echo "options('repos' = 'https://ftp.fau.de/cran/')" >> /usr/local/lib/R/etc/Rprofile.site
-    - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')"
     - mkdir -p ci
 
 stages:
@@ -22,6 +22,7 @@ check:
   stage: build
   allow_failure: true # necessary when having development-packages (in remotes-section of DESCRIPTION)
   script:
+    - R -e "devtools::install_deps(pkg = '.', upgrade = 'always')"
     - R -e "devtools::check(pkg = '.', args = c('--no-tests', '--no-vignettes'), build_args = c('--no-build-vignettes'), check_dir = '${CI_PROJECT_DIR}/ci')"
   artifacts:
     paths:
@@ -40,6 +41,7 @@ create_manual:
   stage: build
   allow_failure: true
   script:
+    - R -e "devtools::install_deps(pkg = '.', upgrade = 'always')"
     - R -e "devtools::build_manual(pkg = '.', path = '${CI_PROJECT_DIR}/ci')"
   artifacts:
     paths:
@@ -56,6 +58,7 @@ create_manual:
 build_source:
   stage: build
   script:
+    - R -e "devtools::install_deps(pkg = '.', upgrade = 'always')"
     - R -e "devtools::build(pkg = '.', path = '${CI_PROJECT_DIR}/ci', binary = FALSE, vignettes = FALSE)"
   artifacts:
     paths:
@@ -72,6 +75,7 @@ build_source:
 build_binary:
   stage: build
   script:
+    - R -e "devtools::install_deps(pkg = '.', upgrade = 'always')"
     - R -e "devtools::build(pkg = '.', path = '${CI_PROJECT_DIR}/ci', binary = TRUE, vignettes = FALSE)"
   artifacts:
     paths:
@@ -96,6 +100,7 @@ coverage:
   allow_failure: true
   when: on_success
   script:
+    - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
     - R -e "install.packages('DT')"
     - R -e "covr::gitlab(quiet = FALSE)"
   artifacts:
@@ -114,6 +119,7 @@ testing:
   allow_failure: true
   when: on_success
   script:
+    - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
     - R -e "devtools::test(pkg = '.')"
   except:
     refs:
@@ -129,6 +135,7 @@ testing:
 install:
   stage: deploy
   script:
+    - R -e "devtools::install_deps(pkg = '.', upgrade = 'always')"
     - R -e "devtools::install(pkg = '.', upgrade = 'always')"
   except:
     refs:
@@ -141,10 +148,10 @@ install:
 compile_vignette:
   stage: vignette
   script:
+    - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
     - R -e "devtools::install(pkg = '.', upgrade = 'always')"
     - R -e "reticulate::install_miniconda(path = reticulate::miniconda_path(), update = TRUE, force = FALSE)"
     - R -e "reticulate::py_config()"
-    - R -e "lightgbm.py::install_py_lightgbm()"
     - R -e "devtools::build_vignettes(pkg = '.', clean = FALSE)"
   artifacts:
     paths:

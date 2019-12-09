@@ -58,7 +58,7 @@ target_col <- "diabetes"
 id_col <- NULL
 ```
 
-To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures are stratified sampling. 
+To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures a stratified sampling. 
 
 ```r
 set.seed(17)
@@ -149,18 +149,6 @@ The variable importance plot can be calculated by using the learner's `importanc
 ```r
 imp <- lgb_learner$importance()
 imp$raw_values
-```
-
-```r
-filename <- "./imp_plot_binary.png"
-grDevices::png(
-    filename = filename,
-    res = 150,
-    height = 1000,
-    width = 1500
-  )
-print(imp$plot)
-grDevices::dev.off()
-knitr::include_graphics(filename)
+plot(imp$plot)
 ```
 

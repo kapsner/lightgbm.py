@@ -51,7 +51,7 @@ target_col <- "diabetes"
 id_col <- NULL
 ```
 
-To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures are stratified sampling. 
+To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures a stratified sampling. 
 
 ```{r}
 set.seed(17)
