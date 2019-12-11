@@ -58,18 +58,16 @@ target_col <- "diabetes"
 id_col <- NULL
 ```
 
-To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures a stratified sampling. 
+To evaluate the model performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
 
-```r
-set.seed(17)
-train_index <- caret::createDataPartition(
-  y = dataset[, get(target_col)],
-  times = 1,
-  p = 0.7
-)[[1]]
-
-# test index
-test_index <- setdiff(1:nrow(dataset), train_index)
+```{r}
+split <- sklearn_train_test_split(
+  dataset,
+  target_col,
+  split = 0.7,
+  seed = 17,
+  return_only_index = TRUE
+)
 ```
 
 ## Instantiate lgb_learner 
@@ -78,7 +76,7 @@ Initially, the LightgbmTrain class needs to be instantiated:
 
 ```r
 lgb_learner <- LightgbmTrain$new(
-  dataset = dataset[train_index, ],
+  dataset = dataset[split$train_index, ],
   target_col = target_col,
   id_col = id_col
 )
@@ -132,21 +130,35 @@ lgb_learner$model$best_score$valid_0
 The learner's `predict` function returns a list object, which consists of the predicted probabilities for each class and the predicted class labels: 
 
 ```r
-predictions <- lgb_learner$predict(newdata = dataset[test_index,])
+predictions <- lgb_learner$predict(newdata = dataset[split$test_index, ])
 head(predictions$probabilities)
 ```
 
-A confusion matrix can be calculated using the learner's function `confusion_matrix`: 
+In order to calculate model metrics, the target variables have to be transformed accordingly to the learner's transformation:
 
-```r
-lgb_learner$confusion_matrix(
-  y_true = dataset[test_index, get(lgb_learner$target_names)]
+```{r}
+# use the learners transform_target-method
+target_test <- lgb_learner$transform_target(
+  dataset[split$test_index, get(lgb_learner$target_names)]
+)
+```
+
+Now, several model metrics can be calculated:
+
+```{r}
+MLmetrics::ConfusionMatrix(
+  y_true = target_test,
+  y_pred = predictions$classes
+)
+MLmetrics::MultiLogLoss(
+  y_true = target_test,
+  y_pred = predictions$probabilities
 )
 ```
 
 The variable importance plot can be calculated by using the learner's `importance` function: 
 
-```r
+```{r}
 imp <- lgb_learner$importance()
 imp$raw_values
 plot(imp$plot)

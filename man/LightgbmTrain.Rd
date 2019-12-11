@@ -9,9 +9,6 @@ A wrapper around the lightgbm.train python class.
 \references{
 \url{https://lightgbm.readthedocs.io}
 }
-\seealso{
-\code{\link[caret]{confusionMatrix}}
-}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
@@ -46,7 +43,7 @@ train function.}
 \item \href{#method-data_preprocessing}{\code{LightgbmTrain$data_preprocessing()}}
 \item \href{#method-train}{\code{LightgbmTrain$train()}}
 \item \href{#method-predict}{\code{LightgbmTrain$predict()}}
-\item \href{#method-confusion_matrix}{\code{LightgbmTrain$confusion_matrix()}}
+\item \href{#method-transform_target}{\code{LightgbmTrain$transform_target()}}
 \item \href{#method-importance}{\code{LightgbmTrain$importance()}}
 \item \href{#method-clone}{\code{LightgbmTrain$clone()}}
 }
@@ -54,7 +51,7 @@ train function.}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-new"></a>}}
 \subsection{Method \code{new()}}{
-The initializer function.
+The initialize function.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$new(dataset, target_col, id_col = NULL)}\if{html}{\out{</div>}}
 }
@@ -89,7 +86,7 @@ data for validation (default: 0.7). The allowed value range is
 '1', taking the whole training data for validation during the model
 training.}
 
-\item{\code{split_seed}}{A integer (defaul: NULL). Please use this argument in
+\item{\code{split_seed}}{A integer (default: NULL). Please use this argument in
 order to generate reproducible results.}
 }
 \if{html}{\out{</div>}}
@@ -154,22 +151,25 @@ All arguments are passed to the predict function of the created
 
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-confusion_matrix"></a>}}
-\subsection{Method \code{confusion_matrix()}}{
-The confusion matrix function.
+\if{html}{\out{<a id="method-transform_target"></a>}}
+\subsection{Method \code{transform_target()}}{
+Transform the target variable
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$confusion_matrix(y_true)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$transform_target(vector)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{y_true}}{A vector holding the ground truth of the predicted data.}
+\item{\code{vector}}{A vector containing targets.}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Details}{
-Creates a confusion matrix by using the R package `caret`.
+The function is used internally, to transform the target
+  variable to meet LightGBMs requirements. It can also be used,
+  to transform the yet untransformed target variable of a holdout
+  dataset.
 }
 
 }

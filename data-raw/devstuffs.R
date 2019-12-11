@@ -69,11 +69,8 @@ usethis::use_package("R", min_version = "2.10", type = "Depends")
 usethis::use_package("data.table", type="Imports")
 usethis::use_package("R6", type="Imports")
 usethis::use_package("ggplot2", type="Imports")
-usethis::use_package("viridis", type="Imports")
 #usethis::use_package("reticulate", type="Imports")
 usethis::use_package("paradox", type="Imports")
-usethis::use_package("caret", type="Imports")
-usethis::use_package("e1071", type="Imports")
 
 # Suggests
 usethis::use_package("testthat", type = "Suggests")
@@ -93,6 +90,7 @@ usethis::use_package("rmarkdown", type = "Suggests")
 usethis::use_package("qpdf", type = "Suggests")
 usethis::use_package("knitr", type = "Suggests")
 usethis::use_package("mlbench", type = "Suggests")
+usethis::use_package("MLmetrics", type = "Suggests")
 
 
 # buildignore

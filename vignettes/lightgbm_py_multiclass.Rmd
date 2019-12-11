@@ -30,6 +30,8 @@ reticulate::install_miniconda(
   update = TRUE,
   force = FALSE
 )
+```
+```{r}
 reticulate::py_config()
 ```
 
@@ -50,23 +52,15 @@ target_col <- "Species"
 id_col <- NULL
 ```
 
-To evaluate the model performance, the dataset is split into a training set and a test set with `caret::createDataPartition`. This function ensures a stratified sampling. 
+To evaluate the model performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
 
 ```{r}
-sklearn <- reticulate::import("sklearn.model_selection")
-traintest_split <- sklearn$train_test_split(
-  dataset[,-(target_col), with = F],
-  dataset[, get(target_col)],
-  stratify = dataset[, get(target_col)],
-  train_size = 0.7,
-  random_state = 17L
-)
-
-train_test_split <- function(dataset, target_col, split, seed) {
-  
-}
-d_train <- data.table::data.table(
-  cbind(traintest_split[[1]], eval(target_col) = traintest_split[[3]])
+split <- sklearn_train_test_split(
+  dataset,
+  target_col,
+  split = 0.7,
+  seed = 17,
+  return_only_index = TRUE
 )
 ```
 
@@ -76,7 +70,7 @@ Initially, the LightgbmTrain class needs to be instantiated:
 
 ```{r}
 lgb_learner <- LightgbmTrain$new(
-  dataset = dataset[train_index, ],
+  dataset = dataset[split$train_index, ],
   target_col = target_col,
   id_col = id_col
 )
@@ -124,21 +118,44 @@ Basic values can be assesed directly from the model:
 
 ```{r}
 lgb_learner$model$best_iteration
-lgb_learner$model$best_score
+lgb_learner$model$best_score$valid_0
 ```
 
 The learner's `predict` function returns a list object, which consists of the predicted probabilities for each class and the predicted class labels: 
 
 ```{r}
-predictions <- lgb_learner$predict(newdata = dataset[test_index,])
+predictions <- lgb_learner$predict(newdata = dataset[split$test_index, ])
 head(predictions$probabilities)
 ```
 
-A confusion matrix can be calculated using the learner's function `confusion_matrix`: 
+In order to calculate model metrics, the target variables have to be transformed accordingly to the learner's transformation:
 
 ```{r}
-lgb_learner$confusion_matrix(
-  y_true = dataset[test_index, get(lgb_learner$target_names)]
+# befor transformation
+head(dataset[split$test_index, get(lgb_learner$target_names)])
+
+# use the learners transform_target-method
+target_test <- lgb_learner$transform_target(
+  dataset[split$test_index, get(lgb_learner$target_names)]
+)
+# after transformation
+head(target_test)
+```
+
+Now, several model metrics can be calculated:
+
+```{r}
+MLmetrics::ConfusionMatrix(
+  y_true = target_test,
+  y_pred = predictions$classes
+)
+MLmetrics::Accuracy(
+  y_true = target_test,
+  y_pred = predictions$classes
+)
+MLmetrics::MultiLogLoss(
+  y_true = target_test,
+  y_pred = predictions$probabilities
 )
 ```
 

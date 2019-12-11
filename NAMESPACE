@@ -2,5 +2,6 @@
 
 export(LightgbmTrain)
 export(install_py_lightgbm)
+export(sklearn_train_test_split)
 import(data.table)
 import(paradox)
