@@ -25,10 +25,10 @@ my_desc$del("Maintainer")
 my_desc$set_version("0.0.0.9000")
 
 # The title of your package
-my_desc$set(Title = "Python LightGBM in R")
+my_desc$set(Title = "Use Python's LightGBM Module in R")
 
 # The description of your package
-my_desc$set(Description = "LightGBM in R by making use of its python module.")
+my_desc$set(Description = paste0("LightGBM in R by making use of its python module."))
 
 # The date when description file has been created
 my_desc$set("Date" = as.character(Sys.Date()))
