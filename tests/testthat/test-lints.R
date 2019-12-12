@@ -23,6 +23,7 @@ test_that(
           list(message = "cyclomatic complexity", line_number = 13),
           list(message = "snake_case", line_number = 13)
         ),
+        "sklearn_train_test_split.R" = NULL,
         "utils.R" = NULL #%list(
           #% list(message = "snake_case", line_number = 1),
           #% list(message = "lightgbm", line_number = 3)
