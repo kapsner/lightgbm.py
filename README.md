@@ -58,7 +58,7 @@ target_col <- "diabetes"
 id_col <- NULL
 ```
 
-To evaluate the model performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
+To evaluate the model's performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
 
 ```{r}
 split <- sklearn_train_test_split(
