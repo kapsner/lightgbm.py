@@ -1,0 +1,184 @@
+---
+title: "lightgbm.py: Regression Example"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{lightgbm_py_regression}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(lightgbm.py)
+library(mlbench)
+```
+
+# Install the package
+
+Make sure, the reticulate package is configured properly on your system. If not, you can e.g. install `miniconda`:
+
+```{r eval=FALSE}
+reticulate::install_miniconda(
+  path = reticulate::miniconda_path(),
+  update = TRUE,
+  force = FALSE
+)
+```
+```{r}
+reticulate::py_config()
+```
+
+Use the function `install_py_lightgbm` in order to install the lightgbm python module. This function will first look, if the reticulate package is configured well and if the python module `lightgbm` is aready present. If not, it is automatically installed. 
+
+```{r}
+lightgbm.py::install_py_lightgbm()
+```
+
+# Load and prepare data
+
+The data must be provided as a `data.table` object. To simplify the subsequent steps, the target column name and the ID column name are stored in the objects `target_col` and `id_col`, respectively. 
+
+```{r}
+data("BostonHousing")
+dataset <- data.table::as.data.table(BostonHousing)
+target_col <- "medv"
+id_col <- NULL
+```
+
+To evaluate the model performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling (stratified sampling does only work with categorical variables).
+
+```{r}
+split <- sklearn_train_test_split(
+  dataset,
+  target_col,
+  split = 0.7,
+  seed = 17,
+  return_only_index = TRUE,
+  stratify = FALSE
+)
+```
+
+# Instantiate lgb_learner 
+
+Initially, the LightgbmTrain class needs to be instantiated: 
+
+```{r}
+lgb_learner <- LightgbmTrain$new(
+  dataset = dataset[split$train_index, ],
+  target_col = target_col,
+  id_col = id_col
+)
+```
+
+# Prepare learner 
+
+Next, the learner parameters need to be set. At least, the `objective` parameter needs to be provided! Almost all possible parameters have been implemented here. You can inspect them using the following command: 
+
+```{r eval=FALSE}
+lgb_learner$param_set
+```
+
+Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details on these parameters.  
+
+```{r}
+lgb_learner$param_set$values <- list(
+  "objective" = "regression",
+  "learning_rate" = 0.1,
+  "seed" = 17L,
+  "metric" = "rmse"
+)
+```
+
+When we have set the learner's objective, we can perform the data preprocessing step by using the learner's function `data_preprocessing`. This function takes two arguments, `validation_split` (default = 0.7) and `split_seed` (defaul: NULL). 
+`validation_split` can be set in order to further split the training data and evaluate the model performance during training against the validation set. The allowed value range is 0 < validation_split <= 1. This parameter can also be set to "1", taking the whole training data for validation during the model training. For reproducibility, please use the `split_seed` argument. 
+
+```{r}
+lgb_learner$data_preprocessing(validation_split = 0.7, split_seed = 2)
+```
+
+# Train learner
+
+We can now train the learner by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
+
+```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
+lgb_learner$train(
+  num_boost_round = 5000,
+  early_stopping_rounds = 100
+)
+```
+
+# Evaluate Model Performance
+
+Basic values can be assesed directly from the model: 
+
+```{r}
+lgb_learner$model$best_iteration
+lgb_learner$model$best_score$valid_0
+```
+
+The learner's `predict` function returns a list object, which consists of the predicted outcomes:
+
+```{r}
+predictions <- lgb_learner$predict(newdata = dataset[split$test_index, ])
+head(predictions$response)
+```
+
+In order to calculate model metrics, the target variables have to be transformed accordingly to the learner's transformation:
+
+```{r}
+# befor transformation
+head(dataset[split$test_index, get(lgb_learner$target_names)])
+
+# use the learners transform_target-method
+target_test <- lgb_learner$transform_target(
+  dataset[split$test_index, get(lgb_learner$target_names)]
+)
+# after transformation
+head(target_test)
+```
+
+Now, several model metrics can be calculated:
+
+```{r}
+MLmetrics::RMSE(
+  y_true = target_test,
+  y_pred = predictions$response
+)
+MLmetrics::RMSLE(
+  y_true = target_test,
+  y_pred = predictions$response
+)
+MLmetrics::MAE(
+  y_true = target_test,
+  y_pred = predictions$response
+)
+```
+
+The variable importance plot can be calculated by using the learner's `importance` function: 
+
+```{r}
+imp <- lgb_learner$importance()
+imp$raw_values
+```
+
+```{r out.width='80%'}
+filename <- "./imp_plot_regression.png"
+grDevices::png(
+    filename = filename,
+    res = 150,
+    height = 1000,
+    width = 1500
+  )
+print(imp$plot)
+grDevices::dev.off()
+knitr::include_graphics(filename)
+```
+

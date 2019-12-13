@@ -129,13 +129,34 @@ LightgbmTrain <- R6::R6Class(
 
       if (private$validation_split < 1) {
 
-        train_test_split <- sklearn_train_test_split(
-          self$dataset,
-          self$target_names,
-          split = private$validation_split,
-          seed = split_seed,
-          return_only_index = TRUE
+        train_test_split <- tryCatch(
+          expr = {
+            train_test_split <- sklearn_train_test_split(
+              self$dataset,
+              self$target_names,
+              split = private$validation_split,
+              seed = split_seed,
+              return_only_index = TRUE,
+              stratify = TRUE
+            )
+            train_test_split
+          }, error = function(e) {
+            print(e)
+            message("\nFalling back to splitting without stratification.")
+            train_test_split <- sklearn_train_test_split(
+              self$dataset,
+              self$target_names,
+              split = private$validation_split,
+              seed = split_seed,
+              return_only_index = TRUE,
+              stratify = FALSE
+            )
+            train_test_split
+          }, finally = function(f) {
+            return(train_test_split)
+          }
         )
+
         # train index
         train_index <- train_test_split$train_index
 
@@ -271,6 +292,8 @@ LightgbmTrain <- R6::R6Class(
         is_reshape = TRUE
       )
 
+      outlist <- list("probabilities" = probs)
+
       if (self$parameters[["objective"]] %in%
           c("multiclass", "multiclassova", "lambdarank")) {
         colnames(probs) <- as.character(unique(private$label_names))
@@ -280,16 +303,18 @@ LightgbmTrain <- R6::R6Class(
                                          max(probs[x, ]))]
           return(as.integer(ret))
         })
-
+        outlist <- c(outlist, list("classes" = private$classes))
 
       } else if (self$parameters[["objective"]] == "binary") {
         private$classes <- as.integer(ifelse(probs > 0.5, 1, 0))
+        outlist <- c(outlist, list("classes" = private$classes))
       }
 
-      return(list(
-        "probabilities" = probs,
-        "classes" = private$classes
-      ))
+      if (length(outlist) == 1) {
+        outlist <- list("response" = outlist[[1]])
+      }
+
+      return(outlist)
     },
 
     #' @description Transform the target variable

@@ -9,7 +9,8 @@ sklearn_train_test_split(
   target_col,
   split,
   seed = NULL,
-  return_only_index = FALSE
+  return_only_index = FALSE,
+  stratify = TRUE
 )
 }
 \arguments{
@@ -27,6 +28,10 @@ order to generate reproducible results.}
 \item{return_only_index}{A logical (default: FALSE). If FALSE,, the return
 value is a list containing the split data.tables. If TRUE, only the
 sampled row numbers are returned.}
+
+\item{stratify}{A logical. If the the dataset should be splitted in a
+stratified fashion (does only work for categorical variables;
+default: TRUE).}
 }
 \description{
 A function to split a dataset into training and validation set,

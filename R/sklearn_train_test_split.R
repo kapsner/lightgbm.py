@@ -13,6 +13,9 @@
 #' @param return_only_index A logical (default: FALSE). If FALSE,, the return
 #'   value is a list containing the split data.tables. If TRUE, only the
 #'   sampled row numbers are returned.
+#' @param stratify A logical. If the the dataset should be splitted in a
+#'   stratified fashion (does only work for categorical variables;
+#'   default: TRUE).
 #'
 #' @references \url{https://scikit-learn.org/stable/modules/generated/sklearn.
 #'   model_selection.train_test_split.html}
@@ -23,7 +26,8 @@ sklearn_train_test_split <- function(dataset,
                                      target_col,
                                      split,
                                      seed = NULL,
-                                     return_only_index = FALSE) {
+                                     return_only_index = FALSE,
+                                     stratify = TRUE) {
   stopifnot(
     reticulate::py_module_available("sklearn"),
     data.table::is.data.table(dataset),
@@ -31,11 +35,19 @@ sklearn_train_test_split <- function(dataset,
     is.numeric(split),
     split > 0 && split < 1,
     is.numeric(seed) || is.null(seed),
-    is.logical(return_only_index)
+    is.logical(return_only_index),
+    is.logical(stratify)
   )
 
   # import sklearn.model_selection
   sklearn <- reticulate::import("sklearn.model_selection")
+
+  # stratify
+  if (stratify) {
+    stratify_classes <- dataset[, get(target_col)]
+  } else {
+    stratify_classes <- NULL
+  }
 
   # transform to dataframe and add row-ids
   dframe <- as.data.frame(dataset[, -c(target_col), with = FALSE])
@@ -48,7 +60,7 @@ sklearn_train_test_split <- function(dataset,
     dataset[, get(target_col)], # y
     train_size = split,
     random_state = as.integer(seed),
-    stratify = dataset[, get(target_col)]
+    stratify = stratify_classes
   )
 
   # convert splitted data.frames to data.frames again
@@ -60,8 +72,8 @@ sklearn_train_test_split <- function(dataset,
 
   if (return_only_index) {
     return(list(
-      train_index = splitlist[[1]]$lgb_split_row_id,
-      test_index = splitlist[[2]]$lgb_split_row_id
+      train_index = as.integer(splitlist[[1]]$lgb_split_row_id),
+      test_index = as.integer(splitlist[[2]]$lgb_split_row_id)
     ))
   } else {
     # return everything as data.table
