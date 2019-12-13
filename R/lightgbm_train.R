@@ -74,22 +74,35 @@ LightgbmTrain <- R6::R6Class(
 
     # define methods
     #' @description The initialize function.
+    #'
+    initialize = function() {
+
+      stopifnot(
+        reticulate::py_module_available("lightgbm")
+      )
+
+      # load python module
+      private$lightgbm <- reticulate::import("lightgbm", delay_load = TRUE)
+
+      # initialize parameter set
+      self$param_set <- lgbparams()
+
+    },
+
+    #' @description Initialize dataset function.
     #' @param dataset A data.table object. The dataset used for training.
     #' @param target_col A character string. The name of the target column.
     #' @param id_col (optional) A character string. The name if the ID column
     #'   (default: NULL).
     #'
-    initialize = function(dataset, target_col, id_col = NULL) {
+    init_data = function(dataset, target_col, id_col = NULL) {
 
       stopifnot(
         data.table::is.data.table(dataset),
         is.character(target_col),
         is.character(id_col) || is.null(id_col),
-        target_col %in% colnames(dataset),
-        reticulate::py_module_available("lightgbm")
+        target_col %in% colnames(dataset)
       )
-
-      private$lightgbm <- reticulate::import("lightgbm", delay_load = TRUE)
 
       self$dataset <- dataset
       self$target_names <- target_col
@@ -97,8 +110,6 @@ LightgbmTrain <- R6::R6Class(
         c(colnames(self$dataset), id_col),
         self$target_names
       )
-
-      self$param_set <- lgbparams()
     },
 
     #' @description The data preprocessing function.

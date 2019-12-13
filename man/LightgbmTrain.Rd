@@ -40,6 +40,7 @@ train function.}
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-new}{\code{LightgbmTrain$new()}}
+\item \href{#method-init_data}{\code{LightgbmTrain$init_data()}}
 \item \href{#method-data_preprocessing}{\code{LightgbmTrain$data_preprocessing()}}
 \item \href{#method-train}{\code{LightgbmTrain$train()}}
 \item \href{#method-predict}{\code{LightgbmTrain$predict()}}
@@ -53,7 +54,16 @@ train function.}
 \subsection{Method \code{new()}}{
 The initialize function.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$new(dataset, target_col, id_col = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$new()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-init_data"></a>}}
+\subsection{Method \code{init_data()}}{
+Initialize dataset function.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$init_data(dataset, target_col, id_col = NULL)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

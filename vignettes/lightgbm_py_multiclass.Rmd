@@ -69,7 +69,8 @@ split <- sklearn_train_test_split(
 Initially, the LightgbmTrain class needs to be instantiated: 
 
 ```{r}
-lgb_learner <- LightgbmTrain$new(
+lgb_learner <- LightgbmTrain$new()
+lgb_learner$init_data(
   dataset = dataset[split$train_index, ],
   target_col = target_col,
   id_col = id_col
