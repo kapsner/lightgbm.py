@@ -62,6 +62,8 @@ split <- sklearn_train_test_split(
   seed = 17,
   return_only_index = TRUE
 )
+table(dataset[split$train_index, target_col, with = F])
+table(dataset[split$test_index, target_col, with = F])
 ```
 
 # Instantiate lgb_learner 
@@ -91,7 +93,8 @@ Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for furth
 lgb_learner$param_set$values <- list(
   "objective" = "multiclass",
   "learning_rate" = 0.01,
-  "seed" = 17L
+  "seed" = 17L,
+  "metric" = "multi_logloss"
 )
 ```
 
@@ -109,7 +112,7 @@ We can now train the learner by using its `train` function. The parameters `num_
 ```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
 lgb_learner$train(
   num_boost_round = 5000,
-  early_stopping_rounds = 1000
+  early_stopping_rounds = 100
 )
 ```
 

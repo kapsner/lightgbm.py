@@ -72,6 +72,8 @@ LightgbmTrain <- R6::R6Class(
     #' @field model The trained lightgbm model (python class 'Booster').
     model = NULL,
 
+    value_mapping = NULL,
+
     # define methods
     #' @description The initialize function.
     #'
@@ -283,11 +285,13 @@ LightgbmTrain <- R6::R6Class(
     #' @param newdata A data.table object holding the data which should be
     #'   predicted.
     #'
-    predict = function(newdata) {
+    predict = function(newdata, revalue = FALSE) {
       stopifnot(
         data.table::is.data.table(newdata),
         !is.null(self$model)
       )
+
+      outlist <- list()
 
       pred_data <- newdata[, self$feature_names, with = F] # get newdata
       # transform it
@@ -303,26 +307,40 @@ LightgbmTrain <- R6::R6Class(
         is_reshape = TRUE
       )
 
-      outlist <- list("probabilities" = probs)
-
       if (self$parameters[["objective"]] %in%
           c("multiclass", "multiclassova", "lambdarank")) {
         colnames(probs) <- as.character(unique(private$label_names))
 
+        if (revalue) {
+          # process target variable
+          c_names <- colnames(probs)
+          c_names <- plyr::revalue(
+            x = c_names,
+            replace = self$value_mapping
+          )
+          colnames(probs) <- c_names
+        }
+        outlist <- list("probabilities" = probs)
+
         private$classes <- sapply(seq_len(nrow(probs)), function(x) {
           ret <- colnames(probs)[which(probs[x, ] ==
                                          max(probs[x, ]))]
-          return(as.integer(ret))
+          return(ret)
         })
-        outlist <- c(outlist, list("classes" = private$classes))
+        if (revalue) {
+          outlist <- c(outlist, list("classes" = private$classes))
+        } else {
+          outlist <- c(outlist, list("classes" = as.integer(private$classes)))
+        }
 
       } else if (self$parameters[["objective"]] == "binary") {
+        outlist <- list("probabilities" = probs)
         private$classes <- as.integer(ifelse(probs > 0.5, 1, 0))
         outlist <- c(outlist, list("classes" = private$classes))
       }
 
-      if (length(outlist) == 1) {
-        outlist <- list("response" = outlist[[1]])
+      if (length(outlist) < 2) {
+        outlist <- list("response" = probs)
       }
 
       return(outlist)
@@ -343,15 +361,24 @@ LightgbmTrain <- R6::R6Class(
       if (self$parameters[["objective"]] %in%
           c("binary", "multiclass", "multiclassova", "lambdarank")) {
 
+        old_levels <- factor(levels(factor(vector)))
+
         # if target is not numeric
         if (!is.numeric(vector)) {
 
           vector <- (as.numeric(vector) - 1L)
 
+          new_levels <- (as.numeric(old_levels) - 1L)
+
+          old_levels <- as.character(old_levels)
+          names(old_levels) <- new_levels
+          self$value_mapping <- old_levels
+
           # if target is numeric and integer
         } else if (is.integer(vector) || is.numeric(vector)) {
 
           vector <- as.integer(vector)
+          new_levels <- as.integer(old_levels)
 
           # check, if minimum != 0 --> if == 0, we have nothing to do
           if (min(vector) != 0) {
@@ -359,7 +386,8 @@ LightgbmTrain <- R6::R6Class(
             # if min == 1, substract 1 --> lightgbm need the first class
             # to be 0
             if (min(vector) == 1) {
-              vector <- (self$target_names - 1L)
+              vector <- as.integer(vector) - 1L
+              new_levels <- as.integer(old_levels) - 1L
 
               # else stop with warning
             } else {
@@ -369,6 +397,9 @@ LightgbmTrain <- R6::R6Class(
               )
             }
           }
+          old_levels <- as.character(old_levels)
+          names(old_levels) <- new_levels
+          self$value_mapping <- old_levels
 
           # stop if target is numeric and not integer
         } else {

@@ -143,7 +143,7 @@ All arguments are passed to the train function of python's
 \subsection{Method \code{predict()}}{
 The predict function.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$predict(newdata)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$predict(newdata, revalue = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

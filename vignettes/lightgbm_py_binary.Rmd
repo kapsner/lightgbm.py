@@ -63,6 +63,8 @@ split <- sklearn_train_test_split(
   seed = 17,
   return_only_index = TRUE
 )
+table(dataset[split$train_index, target_col, with = F])
+table(dataset[split$test_index, target_col, with = F])
 ```
 
 # Instantiate lgb_learner 
