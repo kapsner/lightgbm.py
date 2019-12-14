@@ -47,9 +47,9 @@ Then use the function `install_py_lightgbm` in order to install the lightgbm pyt
 lightgbm.py::install_py_lightgbm()
 ```
 
-## Load and prepare data
+## Load the dataset
 
-The data must be provided as a `data.table` object. To simplify the subsequent steps, the target column name and the ID column name are stored in the objects `target_col` and `id_col`, respectively. 
+The data must be provided as a `data.table` object. To simplify the subsequent steps, the target column name and the ID column name are assigned to the variables `target_col` and `id_col`, respectively. 
 
 ```r
 data("PimaIndiansDiabetes2")
@@ -70,7 +70,7 @@ split <- sklearn_train_test_split(
 )
 ```
 
-## Instantiate lgb_learner 
+## Instantiate the lightgbm learner 
 
 Initially, the LightgbmTrain class needs to be instantiated: 
 
@@ -82,7 +82,7 @@ lgb_learner <- LightgbmTrain$new(
 )
 ```
 
-## Prepare learner 
+## Configure the learner 
 
 Next, the learner parameters need to be set. At least, the `objective` parameter needs to be provided! Almost all possible parameters have been implemented here. You can inspect them using the following command: 
 
@@ -100,16 +100,16 @@ lgb_learner$param_set$values <- list(
 )
 ```
 
-When we have set the learner's objective, we can perform the data preprocessing step by using the learner's function `data_preprocessing`. This function takes two arguments, `validation_split` (default = 0.7) and `split_seed` (defaul: NULL). 
+When the learner's objective is set, the data preprocessing step can be performed by using the learner's function `data_preprocessing`. This function takes two arguments, `validation_split` (default = 0.7) and `split_seed` (defaul: NULL). 
 `validation_split` can be set in order to further split the training data and evaluate the model performance during training against the validation set. The allowed value range is 0 < validation_split <= 1. This parameter can also be set to "1", taking the whole training data for validation during the model training. For reproducibility, please use the `split_seed` argument. 
 
 ```r
 lgb_learner$data_preprocessing(validation_split = 0.7, split_seed = 2)
 ```
 
-## Train learner
+## Train the learner 
 
-We can now train the learner by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
+The learner is now ready to be trained by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
 
 ```r
 lgb_learner$train(
@@ -118,9 +118,9 @@ lgb_learner$train(
 )
 ```
 
-## Evaluate Model Performance
+## Evaluate the model performance 
 
-Basic values can be assesed directly from the model: 
+Basic metrics can be assesed directly from the python model: 
 
 ```r
 lgb_learner$model$best_iteration
@@ -134,13 +134,23 @@ predictions <- lgb_learner$predict(newdata = dataset[split$test_index, ])
 head(predictions$probabilities)
 ```
 
-In order to calculate model metrics, the target variables have to be transformed accordingly to the learner's transformation:
+In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation:
 
 ```{r}
 # use the learners transform_target-method
 target_test <- lgb_learner$transform_target(
   dataset[split$test_index, get(lgb_learner$target_names)]
 )
+```
+
+This transformation of the test set's target variable is not necessary when using the `revalue` argument of the learner's `predict` function:
+
+```{r}
+head(
+  lgb_learner$predict(
+    newdata = dataset[split$test_index, ],
+    revalue = TRUE
+   ))
 ```
 
 Now, several model metrics can be calculated:
@@ -164,3 +174,8 @@ imp$raw_values
 plot(imp$plot)
 ```
 
+# More Infos:
+
+- RStudio's reticulate R package: https://rstudio.github.io/reticulate/
+- Microsoft's LightGBM: https://lightgbm.readthedocs.io/en/latest/
+- Python's scikit-learn: https://scikit-learn.org/stable/
