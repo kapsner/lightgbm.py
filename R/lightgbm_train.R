@@ -72,6 +72,9 @@ LightgbmTrain <- R6::R6Class(
     #' @field model The trained lightgbm model (python class 'Booster').
     model = NULL,
 
+    #' @field value_mapping Stores the value mappings when transforming the
+    #'   target variable in classification tasks to be lightgbm conform
+    #'   (classes must be integers starting with '0').
     value_mapping = NULL,
 
     # define methods
@@ -284,8 +287,12 @@ LightgbmTrain <- R6::R6Class(
     #'
     #' @param newdata A data.table object holding the data which should be
     #'   predicted.
+    #' @param revalue A logical. If the target variable should be revalued to
+    #'   its original categories (default: FALSE).
+    #' @param reshape A logical. Only in binary classification. If the output
+    #'   is a matrix of two columns with the probabilities for each category.
     #'
-    predict = function(newdata, revalue = FALSE) {
+    predict = function(newdata, revalue = FALSE, reshape = FALSE) {
       stopifnot(
         data.table::is.data.table(newdata),
         !is.null(self$model)
@@ -334,8 +341,31 @@ LightgbmTrain <- R6::R6Class(
         }
 
       } else if (self$parameters[["objective"]] == "binary") {
-        outlist <- list("probabilities" = probs)
         private$classes <- as.integer(ifelse(probs > 0.5, 1, 0))
+
+        if (reshape) {
+          probs <- cbind(
+            "0" = 1 - probs,
+            "1" = probs
+          )
+        }
+
+        if (revalue) {
+          if (reshape) {
+            c_names <- colnames(probs)
+            c_names <- plyr::revalue(
+              x = c_names,
+              replace = self$value_mapping
+            )
+            colnames(probs) <- c_names
+          }
+          private$classes <- plyr::revalue(
+            x = as.character(private$classes),
+            replace = self$value_mapping
+          )
+        }
+
+        outlist <- list("probabilities" = probs)
         outlist <- c(outlist, list("classes" = private$classes))
       }
 

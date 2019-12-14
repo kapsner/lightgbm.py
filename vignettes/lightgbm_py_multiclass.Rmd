@@ -52,7 +52,7 @@ target_col <- "Species"
 id_col <- NULL
 ```
 
-To evaluate the model performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
+To evaluate the model performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method and ensures a stratified sampling for categorical target variables. 
 
 ```{r}
 split <- sklearn_train_test_split(
@@ -60,7 +60,8 @@ split <- sklearn_train_test_split(
   target_col,
   split = 0.7,
   seed = 17,
-  return_only_index = TRUE
+  return_only_index = TRUE,
+  stratify = TRUE
 )
 table(dataset[split$train_index, target_col, with = F])
 table(dataset[split$test_index, target_col, with = F])
@@ -146,14 +147,15 @@ target_test <- lgb_learner$transform_target(
 head(target_test)
 ```
 
-This transformation of the test set's target variable is not necessary when using the `revalue` argument of the learner's `predict` function:
+This transformation of the test set's target variable is not necessary when using the `revalue` argument of the learner's `predict` function. The value mappings are stored in the learner's object `value_mapping`:
 
 ```{r}
 head(
   lgb_learner$predict(
     newdata = dataset[split$test_index, ],
     revalue = TRUE
-   ))
+   )$classes)
+lgb_learner$value_mapping
 ```
 
 Now, several model metrics can be calculated:

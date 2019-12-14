@@ -33,6 +33,10 @@ train function.}
 \item{\code{valid_label}}{A vector holding the validation labels.}
 
 \item{\code{model}}{The trained lightgbm model (python class 'Booster').}
+
+\item{\code{value_mapping}}{Stores the value mappings when transforming the
+target variable in classification tasks to be lightgbm conform
+(classes must be integers starting with '0').}
 }
 \if{html}{\out{</div>}}
 }
@@ -143,7 +147,7 @@ All arguments are passed to the train function of python's
 \subsection{Method \code{predict()}}{
 The predict function.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$predict(newdata, revalue = FALSE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$predict(newdata, revalue = FALSE, reshape = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -151,6 +155,12 @@ The predict function.
 \describe{
 \item{\code{newdata}}{A data.table object holding the data which should be
 predicted.}
+
+\item{\code{revalue}}{A logical. If the target variable should be revalued to
+its original categories (default: FALSE).}
+
+\item{\code{reshape}}{A logical. Only in binary classification. If the output
+is a matrix of two columns with the probabilities for each category.}
 }
 \if{html}{\out{</div>}}
 }

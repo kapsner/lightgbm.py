@@ -60,7 +60,7 @@ id_col <- NULL
 
 To evaluate the model's performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
 
-```{r}
+```r
 split <- sklearn_train_test_split(
   dataset,
   target_col,
@@ -134,18 +134,20 @@ predictions <- lgb_learner$predict(newdata = dataset[split$test_index, ])
 head(predictions$probabilities)
 ```
 
-In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation:
+In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation. The value mappings are stored in the learner's object `value_mapping`:
 
-```{r}
-# use the learners transform_target-method
-target_test <- lgb_learner$transform_target(
-  dataset[split$test_index, get(lgb_learner$target_names)]
-)
+```r
+head(
+  lgb_learner$predict(
+    newdata = dataset[split$test_index, ],
+    revalue = TRUE
+   )$classes)
+lgb_learner$value_mapping
 ```
 
 This transformation of the test set's target variable is not necessary when using the `revalue` argument of the learner's `predict` function:
 
-```{r}
+```r
 head(
   lgb_learner$predict(
     newdata = dataset[split$test_index, ],
@@ -155,7 +157,7 @@ head(
 
 Now, several model metrics can be calculated:
 
-```{r}
+```r
 MLmetrics::ConfusionMatrix(
   y_true = target_test,
   y_pred = predictions$classes
@@ -168,7 +170,7 @@ MLmetrics::MultiLogLoss(
 
 The variable importance plot can be calculated by using the learner's `importance` function: 
 
-```{r}
+```r
 imp <- lgb_learner$importance()
 imp$raw_values
 plot(imp$plot)
