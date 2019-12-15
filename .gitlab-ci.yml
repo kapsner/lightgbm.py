@@ -104,7 +104,7 @@ install:
     - mv vignettes/png/*.png ${GITHUB_USER}.github.io/png/
     - cd ${GITHUB_USER}.github.io/
     - git add .
-    - git commit -m "Deploy to Github Pages"
+    - git commit -m "Deploy to Github Pages from ${CI_PROJECT_DIR}"
     - git push
   except:
     refs:
