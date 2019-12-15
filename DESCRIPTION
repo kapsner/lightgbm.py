@@ -35,3 +35,4 @@ Suggests:
     MLmetrics
 Remotes: 
     github::rstudio/reticulate@master
+RoxygenNote: 7.0.1
