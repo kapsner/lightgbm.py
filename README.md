@@ -5,7 +5,7 @@
 [![coverage report](https://gitlab.com/kapsner/lightgbm-py/badges/master/coverage.svg)](https://gitlab.com/kapsner/lightgbm-py/commits/master)
 <!-- badges: end -->
 
-The goal of lightgbm.py is to bring the famous [LightGBM](https://lightgbm.readthedocs.io) gradient booster into an R package which is easy to install. 
+The goal of [lightgbm.py](https://github.com/kapsner/lightgbm.py) is to bring the famous [LightGBM](https://lightgbm.readthedocs.io) gradient booster into an R package which is easy to install. 
 The [original R package](https://github.com/microsoft/LightGBM/tree/master/R-package) comes with a quite difficult installation workflow. However, to be used by other R packages, a simple installation workflow, which can also be automatized, is required. Hence the idea was born, to implement an R package based on [LightGBM's python module](https://github.com/microsoft/LightGBM/tree/master/python-package) by using the [reticulate](https://github.com/rstudio/reticulate) R package as an R interface to Python. 
 
 The code of `lightgbm.py` is implemented using the [R6](https://github.com/r-lib/R6) class for object oriented programming in R. 

@@ -1,6 +1,9 @@
 ---
 title: "lightgbm.py: Regression Example"
-output: rmarkdown::html_vignette
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    keep_md: true
 vignette: >
   %\VignetteIndexEntry{lightgbm_py_regression}
   %\VignetteEncoding{UTF-8}
@@ -14,11 +17,13 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+dir.create("./png")
 ```
 
 ```{r setup}
 library(lightgbm.py)
 library(mlbench)
+library(MLmetrics)
 ```
 
 # Install the package
@@ -171,7 +176,7 @@ imp$raw_values
 ```
 
 ```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
-filename <- "./imp_plot_regression.png"
+filename <- "./png/lgb.py_imp_regression.png"
 grDevices::png(
     filename = filename,
     res = 150,

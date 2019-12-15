@@ -53,7 +53,6 @@ create_manual:
   only:
     refs:
       - master
-      - development
 
 build_source:
   stage: build
@@ -70,7 +69,6 @@ build_source:
   only:
     refs:
       - master
-      - development
 
 build_binary:
   stage: build
@@ -87,7 +85,6 @@ build_binary:
   only:
     refs:
       - master
-      - development
 
 # To have the coverage percentage appear as a gitlab badge follow these
 # instructions:
@@ -103,16 +100,12 @@ coverage:
     - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
     - R -e "install.packages('DT')"
     - R -e "covr::gitlab(quiet = FALSE)"
-  artifacts:
-    paths:
-      - public
   except:
     refs:
       - tags
   only:
     refs:
       - master
-      - development
 
 testing:
   stage: test
@@ -152,16 +145,24 @@ compile_vignette:
     - R -e "devtools::install(pkg = '.', upgrade = 'always')"
     - R -e "reticulate::install_miniconda(path = reticulate::miniconda_path(), update = TRUE, force = FALSE)"
     - R -e "devtools::build_vignettes(pkg = '.', clean = FALSE)"
+  after_script:
+    - git config --global user.name "${GITHUB_USER}"
+    - git config --global user.email "${GITHUB_USER_EMAIL}"
+    - git clone https://${GITHUB_USER}:${K8S_SECRET_GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_USER}.github.io
+    - mv doc/*.md ${GITHUB_USER}.github.io/${R_PKG_NAME}/
+    - mv vignettes/*.png ${GITHUB_USER}.github.io/png/
+    - cd ${GITHUB_USER}.github.io/
+    - git add .
+    - git commit -m "Deploy to Github Pages"
+    - git push
   artifacts:
     paths:
       - "${CI_PROJECT_DIR}/doc"
     when: always
     expire_in: 1 week
-    expire_in: 1 month
   except:
     refs:
       - tags
   only:
     refs:
       - master
-      - development

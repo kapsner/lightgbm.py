@@ -20,3 +20,6 @@ inst/doc
 !/vignettes/
 .Rproj.user
 !/.Rbuildignore
+doc
+Meta
+/vignettes/png

@@ -3,3 +3,5 @@
 ^data-raw$
 ^LICENSE\.md$
 ^\.gitlab-ci\.yml$
+^doc$
+^Meta$
