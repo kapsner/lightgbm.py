@@ -150,7 +150,7 @@ compile_vignette:
     - git config --global user.email "${GITHUB_USER_EMAIL}"
     - git clone https://${GITHUB_USER}:${K8S_SECRET_GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_USER}.github.io
     - mv doc/*.md ${GITHUB_USER}.github.io/${R_PKG_NAME}/
-    - mv vignettes/*.png ${GITHUB_USER}.github.io/png/
+    - mv vignettes/png/*.png ${GITHUB_USER}.github.io/png/
     - cd ${GITHUB_USER}.github.io/
     - git add .
     - git commit -m "Deploy to Github Pages"
