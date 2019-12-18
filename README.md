@@ -179,6 +179,8 @@ imp$raw_values
 plot(imp$plot)
 ```
 
+For further information and examples, please view the `lightgbm.py` package vignettes.  
+
 # More Infos:
 
 - RStudio's reticulate R package: https://rstudio.github.io/reticulate/

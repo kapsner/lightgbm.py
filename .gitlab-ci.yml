@@ -107,16 +107,16 @@ build_vignettes:
     - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
     - R -e "reticulate::install_miniconda(path = reticulate::miniconda_path(), update = TRUE, force = FALSE)"
     - R -e "devtools::build_vignettes(pkg = '.', clean = FALSE)"
-  after_script:
-    - git config --global user.name "${GITHUB_USER}"
-    - git config --global user.email "${GITHUB_USER_EMAIL}"
-    - git clone https://${GITHUB_USER}:${K8S_SECRET_GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_USER}.github.io
-    - mv doc/*.md ${GITHUB_USER}.github.io/${R_PKG_NAME}/
-    - mv vignettes/png/*.png ${GITHUB_USER}.github.io/png/
-    - cd ${GITHUB_USER}.github.io/
-    - git add .
-    - git commit -m "Deploy to Github Pages from ${CI_PROJECT_DIR}"
-    - git push
+  #after_script:
+  #  - git config --global user.name "${GITHUB_USER}"
+  #  - git config --global user.email "${GITHUB_USER_EMAIL}"
+  #  - git clone https://${GITHUB_USER}:${K8S_SECRET_GITHUB_ACCESS_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_USER}.github.io
+  #  - mv doc/*.md ${GITHUB_USER}.github.io/${R_PKG_NAME}/
+  #  - mv vignettes/png/*.png ${GITHUB_USER}.github.io/png/
+  #  - cd ${GITHUB_USER}.github.io/
+  #  - git add .
+  #  - git commit -m "Deploy to Github Pages from ${CI_PROJECT_DIR}"
+  #  - git push
   except:
     refs:
       - tags
