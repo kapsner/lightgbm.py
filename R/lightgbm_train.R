@@ -482,9 +482,12 @@ LightgbmTrain <- R6::R6Class(
     # It must return a sorted (decreasing) numerical, named vector.
     #' @description The importance function.
     #'
+    #' @param view_max An integer. The maximum number of features to be
+    #'   shown in the importance plot (default: 20).
+    #'
     #' @details Exports the model's variable importance.
     #'
-    importance = function() {
+    importance = function(view_max = 20) {
       if (is.null(self$model)) {
         stopf("No model stored")
       }
@@ -497,8 +500,8 @@ LightgbmTrain <- R6::R6Class(
         )
       )[order(get("Value"), decreasing = T)]
 
-      if (nrow(imp) > 20) {
-        imp <- imp[1:20, ]
+      if (nrow(imp) > view_max) {
+        imp <- imp[1:view_max, ]
       }
 
       # importance plot

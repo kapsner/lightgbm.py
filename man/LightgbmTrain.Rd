@@ -198,9 +198,17 @@ The function is used internally, to transform the target
 \subsection{Method \code{importance()}}{
 The importance function.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$importance()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$importance(view_max = 20)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{view_max}}{An integer. The maximum number of features to be
+shown in the importance plot (default: 20).}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Details}{
 Exports the model's variable importance.
 }
