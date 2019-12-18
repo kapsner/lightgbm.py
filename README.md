@@ -5,7 +5,7 @@
 [![coverage report](https://gitlab.com/kapsner/lightgbm-py/badges/master/coverage.svg)](https://gitlab.com/kapsner/lightgbm-py/commits/master)
 <!-- badges: end -->
 
-The goal of [lightgbm.py](https://github.com/kapsner/lightgbm.py) is to provide the [LightGBM gradient booster](https://lightgbm.readthedocs.io) with an R package, using its [python module](https://github.com/microsoft/LightGBM/tree/master/python-package). It is therefore easy to install and can also be integrated into other R packages as a dependency (such as the [mlr3learners.lightgbm](https://github.com/kapsner/mlr3learners.lightgbm) R package.
+The goal of [lightgbm.py](https://github.com/kapsner/lightgbm.py) is to provide the [LightGBM gradient booster](https://lightgbm.readthedocs.io) with an R package, using its [python module](https://github.com/microsoft/LightGBM/tree/master/python-package). It is therefore easy to install and can also be integrated into other R packages as a dependency (such as the [mlr3learners.lightgbm](https://github.com/kapsner/mlr3learners.lightgbm) R package).
 
 The [original LightGBM R package](https://github.com/microsoft/LightGBM/tree/master/R-package) comes with some difficulties regarding its installation workflow. However, to be used by other R packages, a simple installation workflow, which can also be automatized, is required. Hence the idea was born, to implement an R package based on [LightGBM's python module](https://github.com/microsoft/LightGBM/tree/master/python-package) by using the [reticulate](https://github.com/rstudio/reticulate) R package as an R interface to Python. 
 
