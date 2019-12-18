@@ -28,7 +28,7 @@ library(MLmetrics)
 
 # Install the package
 
-Make sure, the reticulate package is configured properly on your system. If not, you can e.g. install `miniconda`:
+Make sure, the reticulate package is configured properly on your system (reticulate version >= 1.13.0.9006) and is pointing to a python environment. If not, you can e.g. install `miniconda`:
 
 ```{r eval=FALSE}
 reticulate::install_miniconda(
