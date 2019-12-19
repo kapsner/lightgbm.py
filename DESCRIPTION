@@ -13,8 +13,7 @@ LazyData: true
 URL: https://github.com/kapsner/lightgbm.py
 BugReports: https://github.com/kapsner/lightgbm.py/issues
 Encoding: UTF-8
-Copyright: Lorenz Kapsner
-Date: 2019-12-15
+Date: 2019-12-19
 VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)
@@ -23,7 +22,7 @@ Imports:
     R6,
     ggplot2,
     paradox,
-    reticulate (>= 1.13.0.9006)
+    reticulate (>= 1.14)
 Suggests: 
     testthat,
     lintr,
@@ -33,6 +32,4 @@ Suggests:
     qpdf,
     mlbench,
     MLmetrics
-Remotes: 
-    github::rstudio/reticulate@master
 RoxygenNote: 7.0.1

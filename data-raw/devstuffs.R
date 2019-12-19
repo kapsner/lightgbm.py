@@ -15,9 +15,6 @@ my_desc$set_authors(c(
          comment = c(ORCID = "0000-0003-1866-860X"))
 ))
 
-# Set copyright
-my_desc$set("Copyright", "Lorenz Kapsner")
-
 # Remove some author fields
 my_desc$del("Maintainer")
 
@@ -69,21 +66,14 @@ usethis::use_package("R", min_version = "2.10", type = "Depends")
 usethis::use_package("data.table", type="Imports")
 usethis::use_package("R6", type="Imports")
 usethis::use_package("ggplot2", type="Imports")
-#usethis::use_package("reticulate", type="Imports")
 usethis::use_package("paradox", type="Imports")
+usethis::use_package("reticulate", type="Imports", min_version = "1.14")
 
 # Suggests
 usethis::use_package("testthat", type = "Suggests")
 usethis::use_package("lintr", type = "Suggests")
 usethis::use_package("grDevices", type = "Suggests")
 usethis::use_package("knitr", type = "Suggests")
-
-# dev packages
-devtools::install_github(repo = "rstudio/reticulate", ref = "master", upgrade = "always")
-usethis::use_dev_package("reticulate", type = "Imports")
-#usethis::use_dev_package("rBiasCorrection", type = "Imports")
-# https://cran.r-project.org/web/packages/devtools/vignettes/dependencies.html
-desc::desc_set_remotes("github::rstudio/reticulate@master", file = usethis::proj_get())
 
 # for vignettes
 usethis::use_package("rmarkdown", type = "Suggests")

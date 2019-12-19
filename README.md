@@ -33,7 +33,7 @@ library(mlbench)
 
 ## Prerequisites
 
-Before you can start using the `lightgbm.py` package, make sure, the reticulate R package is configured properly on your system (reticulate version >= 1.13.0.9006) and is pointing to a python environment. If not, you can e.g. install `miniconda`:
+Before you can start using the `lightgbm.py` package, make sure, the reticulate R package is configured properly on your system (reticulate version >= 1.14) and is pointing to a python environment. If not, you can e.g. install `miniconda`:
 
 ```r
 reticulate::install_miniconda(
