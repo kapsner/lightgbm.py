@@ -100,7 +100,7 @@ Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for furth
 lgb_learner$param_set$values <- list(
   "objective" = "binary",
   "learning_rate" = 0.01,
-  "seed" = 17L
+  "seed" = 17
 )
 ```
 

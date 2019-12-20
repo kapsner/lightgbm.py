@@ -267,6 +267,16 @@ LightgbmTrain <- R6::R6Class(
         valid_set <- train_set
       }
 
+      # set correct types for parameters
+      for (param in names(self$parameters)) {
+        value <- self$parameters[[param]]
+        if (self$param_set$class[[param]] == "ParamInt") {
+          self$parameters[[param]] <- as.integer(round(value))
+        } else if (self$param_set$class[[param]] == "ParamDbl") {
+          self$parameters[[param]] <- as.numeric(value)
+        }
+      }
+
 
       # train lightgbm
       self$model <- private$lightgbm$train(
