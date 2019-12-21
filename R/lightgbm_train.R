@@ -249,7 +249,7 @@ LightgbmTrain <- R6::R6Class(
 
       # extract classification classes
       if (self$parameters[["objective"]] %in%
-        c("multiclass", "multiclassova", "lambdarank")) {
+          c("multiclass", "multiclassova", "lambdarank")) {
         self$parameters[["num_class"]] <- length(private$label_names)
       }
 

@@ -24,9 +24,10 @@ test_that(
           list(message = "snake_case", line_number = 13)
         ),
         "sklearn_train_test_split.R" = NULL,
+        "TransformTarget.R" = "snake_case",
         "utils.R" = NULL #%list(
-          #% list(message = "snake_case", line_number = 1),
-          #% list(message = "lightgbm", line_number = 3)
+        #% list(message = "snake_case", line_number = 1),
+        #% list(message = "lightgbm", line_number = 3)
         #% )
       ),
       "tests/testthat" = list(
