@@ -72,11 +72,6 @@ LightgbmTrain <- R6::R6Class(
     #' @field model The trained lightgbm model (python class 'Booster').
     model = NULL,
 
-    #' @field value_mapping Stores the value mappings when transforming the
-    #'   target variable in classification tasks to be lightgbm conform
-    #'   (classes must be integers starting with '0').
-    value_mapping = NULL,
-
     # define methods
     #' @description The initialize function.
     #'
@@ -92,12 +87,16 @@ LightgbmTrain <- R6::R6Class(
       # initialize parameter set
       self$param_set <- lgbparams()
 
+      self$transform_target <- TransformTarget$new(
+        param_set = self$param_set
+      )
+
     },
 
     #' @description Initialize dataset function.
     #' @param dataset A data.table object. The dataset used for training.
     #' @param target_col A character string. The name of the target column.
-    #' @param id_col (optional) A character string. The name if the ID column
+    #' @param id_col (optional) A character string. The name of the ID column
     #'   (default: NULL).
     #'
     init_data = function(dataset, target_col, id_col = NULL) {
@@ -137,9 +136,11 @@ LightgbmTrain <- R6::R6Class(
       # get parameters
       self$parameters <- self$param_set$get_values(tags = "train")
 
-      self$dataset[, (self$target_names) := self$transform_target(
-        get(self$target_names)
-      )]
+      self$dataset[, (self$target_names) :=
+                     self$transform_target$transform_target(
+                       vector = get(self$target_names),
+                       mapping = "dtrain"
+                     )]
 
       private$validation_split <- validation_split
 
@@ -246,6 +247,12 @@ LightgbmTrain <- R6::R6Class(
       x_label <- self$train_label
       private$label_names <- sort(unique(x_label))
 
+      # extract classification classes
+      if (self$parameters[["objective"]] %in%
+        c("multiclass", "multiclassova", "lambdarank")) {
+        self$parameters[["num_class"]] <- length(private$label_names)
+      }
+
       # python lightgbm$Dataset
       train_set <- private$lightgbm$Dataset(
         data = x_train,
@@ -333,7 +340,7 @@ LightgbmTrain <- R6::R6Class(
           c_names <- colnames(probs)
           c_names <- plyr::revalue(
             x = c_names,
-            replace = self$value_mapping
+            replace = self$transform_target$value_mapping_dtrain
           )
           colnames(probs) <- c_names
         }
@@ -365,13 +372,13 @@ LightgbmTrain <- R6::R6Class(
             c_names <- colnames(probs)
             c_names <- plyr::revalue(
               x = c_names,
-              replace = self$value_mapping
+              replace = self$transform_target$value_mapping_dtrain
             )
             colnames(probs) <- c_names
           }
           private$classes <- plyr::revalue(
             x = as.character(private$classes),
-            replace = self$value_mapping
+            replace = self$transform_target$value_mapping_dtrain
           )
         }
 
@@ -386,107 +393,13 @@ LightgbmTrain <- R6::R6Class(
       return(outlist)
     },
 
-    #' @description Transform the target variable
-    #'
-    #' @details The function is used internally, to transform the target
+    #' @field transform_target The function is used internally,
+    #'   to transform the target
     #'   variable to meet LightGBMs requirements. It can also be used,
     #'   to transform the yet untransformed target variable of a holdout
     #'   dataset.
     #'
-    #' @param vector A vector containing targets.
-    #'
-    transform_target = function(vector) {
-
-      # transform target to numeric for classification tasks
-      if (self$parameters[["objective"]] %in%
-          c("binary", "multiclass", "multiclassova", "lambdarank")) {
-
-        old_levels <- factor(levels(factor(vector)))
-
-        # if target is not numeric
-        if (!is.numeric(vector)) {
-
-          vector <- (as.numeric(vector) - 1L)
-
-          new_levels <- (as.numeric(old_levels) - 1L)
-
-          old_levels <- as.character(old_levels)
-          names(old_levels) <- new_levels
-          self$value_mapping <- old_levels
-
-          # if target is numeric and integer
-        } else if (is.integer(vector) || is.numeric(vector)) {
-
-          vector <- as.integer(vector)
-          new_levels <- as.integer(old_levels)
-
-          # check, if minimum != 0 --> if == 0, we have nothing to do
-          if (min(vector) != 0) {
-
-            # if min == 1, substract 1 --> lightgbm need the first class
-            # to be 0
-            if (min(vector) == 1) {
-              vector <- as.integer(vector) - 1L
-              new_levels <- as.integer(old_levels) - 1L
-
-              # else stop with warning
-            } else {
-              stop(
-                paste0("Please provide a valid target variable ",
-                       "for classification tasks")
-              )
-            }
-          }
-          old_levels <- as.character(old_levels)
-          names(old_levels) <- new_levels
-          self$value_mapping <- old_levels
-
-          # stop if target is numeric and not integer
-        } else {
-          stop(
-            paste0("Please provide a valid target variable ",
-                   "for classification tasks")
-          )
-        }
-
-        # extract classification classes
-
-        if (length(unique(vector)) > 2) {
-          stopifnot(
-            self$parameters[["objective"]] %in%
-              c("multiclass", "multiclassova", "lambdarank")
-          )
-          self$parameters[["num_class"]] <- length(unique(vector))
-        }
-
-        # transform numeric variables
-      } else {
-
-        # we have only work here, if target is not numeric
-        if (!is.numeric(vector)) {
-
-          # try to transform to numeric
-          transform_error <- tryCatch(
-            expr = {
-              vector <- as.numeric(
-                as.character(vector)
-              )
-              ret <- FALSE
-              ret
-            }, error = function(e) {
-              print(e)
-              ret <- TRUE
-              ret
-            }, finally = function(f) {
-              return(ret)
-            }
-          )
-          stopifnot(isFALSE(transform_error))
-        }
-      }
-
-      return(vector)
-    },
+    transform_target = NULL,
 
     # Add method for importance, if learner supports that.
     # It must return a sorted (decreasing) numerical, named vector.

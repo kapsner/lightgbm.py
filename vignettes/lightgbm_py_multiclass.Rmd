@@ -145,8 +145,9 @@ In order to calculate the model metrics, the test's set target variable has to b
 head(dataset[split$test_index, get(lgb_learner$target_names)])
 
 # use the learners transform_target-method
-target_test <- lgb_learner$transform_target(
-  dataset[split$test_index, get(lgb_learner$target_names)]
+target_test <- lgb_learner$transform_target$transform_target(
+  vector = dataset[split$test_index, get(lgb_learner$target_names)],
+  mapping = "dvalid"
 )
 # after transformation
 head(target_test)
@@ -160,7 +161,7 @@ head(
     newdata = dataset[split$test_index, ],
     revalue = TRUE
    )$classes)
-lgb_learner$value_mapping
+lgb_learner$transform_target$value_mapping_dvalid
 ```
 
 Now, several model metrics can be calculated:

@@ -34,9 +34,11 @@ train function.}
 
 \item{\code{model}}{The trained lightgbm model (python class 'Booster').}
 
-\item{\code{value_mapping}}{Stores the value mappings when transforming the
-target variable in classification tasks to be lightgbm conform
-(classes must be integers starting with '0').}
+\item{\code{transform_target}}{The function is used internally,
+to transform the target
+variable to meet LightGBMs requirements. It can also be used,
+to transform the yet untransformed target variable of a holdout
+dataset.}
 }
 \if{html}{\out{</div>}}
 }
@@ -48,7 +50,6 @@ target variable in classification tasks to be lightgbm conform
 \item \href{#method-data_preprocessing}{\code{LightgbmTrain$data_preprocessing()}}
 \item \href{#method-train}{\code{LightgbmTrain$train()}}
 \item \href{#method-predict}{\code{LightgbmTrain$predict()}}
-\item \href{#method-transform_target}{\code{LightgbmTrain$transform_target()}}
 \item \href{#method-importance}{\code{LightgbmTrain$importance()}}
 \item \href{#method-clone}{\code{LightgbmTrain$clone()}}
 }
@@ -77,7 +78,7 @@ Initialize dataset function.
 
 \item{\code{target_col}}{A character string. The name of the target column.}
 
-\item{\code{id_col}}{(optional) A character string. The name if the ID column
+\item{\code{id_col}}{(optional) A character string. The name of the ID column
 (default: NULL).}
 }
 \if{html}{\out{</div>}}
@@ -167,29 +168,6 @@ is a matrix of two columns with the probabilities for each category.}
 \subsection{Details}{
 All arguments are passed to the predict function of the created
   lightgbm python model by using R's reticulate package.
-}
-
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-transform_target"></a>}}
-\subsection{Method \code{transform_target()}}{
-Transform the target variable
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LightgbmTrain$transform_target(vector)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{vector}}{A vector containing targets.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Details}{
-The function is used internally, to transform the target
-  variable to meet LightGBMs requirements. It can also be used,
-  to transform the yet untransformed target variable of a holdout
-  dataset.
 }
 
 }
