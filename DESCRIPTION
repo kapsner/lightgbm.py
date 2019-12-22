@@ -32,4 +32,11 @@ Suggests:
     qpdf,
     mlbench,
     MLmetrics
-RoxygenNote: 7.0.1
+Config/reticulate:
+    list(
+        packages = list(
+            list(package = "lightgbm"),
+            list(package = "scikit-learn")
+        )
+    )
+RoxygenNote: 7.0.2

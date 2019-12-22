@@ -1,3 +1,7 @@
+.onLoad <- function(libname, pkgname) {
+  reticulate::configure_environment(pkgname)
+}
+
 #' @title Install lightgbm python module via reticulate.
 #'
 #' @export

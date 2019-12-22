@@ -25,7 +25,7 @@ test_that(
         ),
         "sklearn_train_test_split.R" = NULL,
         "TransformTarget.R" = "snake_case",
-        "utils.R" = NULL #%list(
+        "utils.R" = "snake_case" #%list(
         #% list(message = "snake_case", line_number = 1),
         #% list(message = "lightgbm", line_number = 3)
         #% )

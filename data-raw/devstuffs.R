@@ -117,3 +117,13 @@ usethis::use_git_ignore("!/.Rbuildignore")
 # lint package
 #lintr::lint_package()
 
+# Using Config/reticulate in description
+# https://cran.r-project.org/web/packages/reticulate/vignettes/python_dependencies.html
+# manually copy the following into the description file:
+# Config/reticulate:
+# list(
+#   packages = list(
+#     list(package = "lightgbm"),
+#     list(package = "scikit-learn")
+#   )
+# )
