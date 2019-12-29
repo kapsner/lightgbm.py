@@ -44,7 +44,7 @@ reticulate::install_miniconda(
 reticulate::py_config()
 ```
 
-Then use the function `install_py_lightgbm` in order to install the lightgbm python module. This function will first look, if the reticulate package is configured well and if the python module `lightgbm` is aready present. If not, it is automatically installed. 
+Then use the function `lightgbm.py::install_py_lightgbm` in order to install the lightgbm python module. This function will first look, if the reticulate package is configured well and if the python module `lightgbm` is aready present. If not, it is automatically installed. 
 
 ```r
 lightgbm.py::install_py_lightgbm()
@@ -61,10 +61,10 @@ target_col <- "diabetes"
 id_col <- NULL
 ```
 
-To evaluate the model's performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
+To evaluate the model's performance, the dataset is split into a training set and a test set with `lightgbm.py::sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method a ensures a stratified sampling. 
 
 ```r
-split <- sklearn_train_test_split(
+split <- lightgbm.py::sklearn_train_test_split(
   dataset,
   target_col,
   split = 0.7,
@@ -78,7 +78,7 @@ split <- sklearn_train_test_split(
 Initially, the LightgbmTrain class needs to be instantiated: 
 
 ```r
-lgb_learner <- LightgbmTrain$new(
+lgb_learner <- LightGBM$new(
   dataset = dataset[split$train_index, ],
   target_col = target_col,
   id_col = id_col
@@ -99,15 +99,9 @@ Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for furth
 lgb_learner$param_set$values <- list(
   "objective" = "binary",
   "learning_rate" = 0.01,
-  "seed" = 17L
+  "seed" = 17L,
+  "metric" = "auc"
 )
-```
-
-When the learner's objective is set, the data preprocessing step can be performed by using the learner's function `data_preprocessing`. This function takes two arguments, `validation_split` (default = 0.7) and `split_seed` (defaul: NULL). 
-`validation_split` can be set in order to further split the training data and evaluate the model performance during training against the validation set. The allowed value range is 0 < validation_split <= 1. This parameter can also be set to "1", taking the whole training data for validation during the model training. For reproducibility, please use the `split_seed` argument. 
-
-```r
-lgb_learner$data_preprocessing(validation_split = 0.7, split_seed = 2)
 ```
 
 ## Train the learner 
@@ -115,47 +109,35 @@ lgb_learner$data_preprocessing(validation_split = 0.7, split_seed = 2)
 The learner is now ready to be trained by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
 
 ```r
-lgb_learner$train(
-  num_boost_round = 5000,
-  early_stopping_rounds = 1000
-)
+lgb_learner$num_boost_round <- 5000
+lgb_learner$early_stopping_rounds <- 1000
+lgb_learner$train()
 ```
 
 ## Evaluate the model performance 
-
-Basic metrics can be assesed directly from the python model: 
-
-```r
-lgb_learner$model$best_iteration
-lgb_learner$model$best_score$valid_0
-```
 
 The learner's `predict` function returns a list object, which consists of the predicted probabilities for each class and the predicted class labels: 
 
 ```r
 predictions <- lgb_learner$predict(newdata = dataset[split$test_index, ])
-head(predictions$probabilities)
+head(predictions)
 ```
 
 In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation. The value mappings are stored in the learner's object `value_mapping`:
 
-```r
-head(
-  lgb_learner$predict(
-    newdata = dataset[split$test_index, ],
-    revalue = TRUE
-   )$classes)
-lgb_learner$value_mapping
-```
+```{r}
+# before transformation
+head(dataset[split$test_index, get(target_col)])
 
-This transformation of the test set's target variable is not necessary when using the `revalue` argument of the learner's `predict` function:
+# use the learners transform_target-method
+target_test <- lgb_learner$trans_tar$transform_target(
+  vector = dataset[split$test_index, get(target_col)],
+  mapping = "dvalid"
+)
+# after transformation
+head(target_test)
 
-```r
-head(
-  lgb_learner$predict(
-    newdata = dataset[split$test_index, ],
-    revalue = TRUE
-   ))
+lgb_learner$trans_tar$value_mapping_dvalid
 ```
 
 Now, several model metrics can be calculated:
@@ -163,11 +145,15 @@ Now, several model metrics can be calculated:
 ```r
 MLmetrics::ConfusionMatrix(
   y_true = target_test,
-  y_pred = predictions$classes
+  y_pred = ifelse(predictions > 0.5, 1, 0)
 )
-MLmetrics::MultiLogLoss(
+MLmetrics::Accuracy(
   y_true = target_test,
-  y_pred = predictions$probabilities
+  y_pred = ifelse(predictions > 0.5, 1, 0)
+)
+MLmetrics::AUC(
+  y_true = target_test,
+  y_pred = predictions
 )
 ```
 

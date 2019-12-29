@@ -10,16 +10,47 @@
 #'
 #' @export
 #% @seealso \code{\link{rstudio/reticulate}}
-LightgbmTrain <- R6::R6Class(
-  classname = "LightgbmTrain",
+LightGBM <- R6::R6Class(
+  classname = "LightGBM",
 
   private = list(
     # define private objects
 
     lightgbm = NULL,
-    validation_split  = NULL,
-    classes = NULL,
-    label_names = NULL,
+
+    # data: train, valid, test
+    train_input = NULL,
+    valid_input = NULL,
+    test_input = NULL,
+    input_rules = NULL,
+
+    # the list, passed to the train function
+    valid_list = NULL,
+
+    # save importance values
+    imp = NULL,
+
+    dataset = NULL,
+    feature_names = NULL,
+    target_names = NULL,
+
+    # convert object types
+    # this is necessary, since mlr3 tuning does pass wrong types
+    convert_types = function() {
+      self$num_boost_round <- as.integer(self$num_boost_round)
+      self$early_stopping_rounds <- as.integer(self$early_stopping_rounds)
+      self$cv_folds <- as.integer(self$cv_folds)
+
+      # set correct types for parameters
+      for (param in names(self$param_set$values)) {
+        value <- self$param_set$values[[param]]
+        if (self$param_set$class[[param]] == "ParamInt") {
+          self$param_set$values[[param]] <- as.integer(round(value))
+        } else if (self$param_set$class[[param]] == "ParamDbl") {
+          self$param_set$values[[param]] <- as.numeric(value)
+        }
+      }
+    },
 
     transform_features = function(data_matrix) {
       for (i in seq_len(ncol(data_matrix))) {
@@ -38,26 +69,85 @@ LightgbmTrain <- R6::R6Class(
         data_matrix[which(is.na(data_matrix[, i])), i] <- NaN
       }
       return(data_matrix)
+    },
+
+    #' @description The data_preprocessing function.
+    #'
+    data_preprocessing = function() {
+
+      stopifnot(
+        !is.null(self$param_set$values[["objective"]])
+      )
+
+      # extract data
+      data <- private$dataset
+
+      # create training label
+      self$train_label <- self$trans_tar$transform_target(
+        vector = data[, get(private$target_names)],
+        mapping = "dtrain"
+      )
+
+      # some further special treatments, when we have a classification task
+      if (self$param_set$values[["objective"]] %in%
+          c("binary", "multiclass", "multiclassova", "lambdarank")) {
+        # store the class label names
+        self$label_names <- sort(unique(self$train_label))
+
+        # if a validation set is provided, check if value mappings are
+        # identical
+        if (!is.null(private$valid_input)) {
+          stopifnot(
+            identical(
+              self$trans_tar$value_mapping_dtrain,
+              self$trans_tar$value_mapping_dvalid
+            )
+          )
+        }
+
+        # extract classification classes and set num_class
+        if (length(self$label_names) > 2) {
+          stopifnot(
+            self$param_set$values[["objective"]] %in%
+              c("multiclass", "multiclassova", "lambdarank")
+          )
+          self$param_set$values[["num_class"]] <- length(self$label_names)
+        }
+      }
+
+      # create lgb.Datasets
+      x_train <- as.matrix(data[, private$feature_names, with = F])
+      # convert Missings to NaN, otherwise they wil be transformed
+      # wrong to python/ an error occurs
+      x_train <- private$transform_features(x_train)
+      self$train_data <- private$lightgbm$Dataset(
+        data = x_train,
+        label = self$train_label,
+        free_raw_data = FALSE,
+        reference = private$input_rules
+      )
+      if (is.null(private$input_rules)) {
+        private$input_rules <- self$train_data
+      }
     }
   ),
 
   public = list(
 
     # define public objects
-    #' @field dataset A data.table object holding the dataset, provided at
-    #'   instantiation.
-    dataset = NULL,
+    #' @field num_boost_round Number of training rounds.
+    num_boost_round = NULL,
 
-    #' @field feature_names A character vector holding the feature names.
-    feature_names = NULL,
-    #' @field target_names A character vector holding the target names.
-    target_names = NULL,
+    #' @field early_stopping_rounds A integer. Activates early stopping.
+    #'   Requires at least one validation data and one metric. If there's
+    #'   more than one, will check all of them except the training data.
+    #'   Returns the model with (best_iter + early_stopping_rounds).
+    #'   If early stopping occurs, the model will have 'best_iter' field.
+    early_stopping_rounds = NULL,
 
-    #' @field param_set The parameter set.
-    param_set = NULL,
-    #' @field parameters The modified parameter set, which is provided to the
-    #'   train function.
-    parameters = NULL,
+    #' @field categorical_feature A list of str or int. Type int represents
+    #'   index, type str represents feature names.
+    categorical_feature = NULL,
 
     #' @field train_data A data.table object holding the training data.
     train_data = NULL,
@@ -69,7 +159,27 @@ LightgbmTrain <- R6::R6Class(
     #' @field valid_label A vector holding the validation labels.
     valid_label = NULL,
 
-    #' @field model The trained lightgbm model (python class 'Booster').
+    #' @field label_names The unique label names in classification tasks.
+    label_names = NULL,
+
+    #' @field trans_tar The transfrom_target instance.
+    trans_tar = NULL,
+
+    #' @field param_set The lightgbm parameters.
+    param_set = NULL,
+
+    #' @field nrounds_by_cv A logical. Calculate the best nrounds by using
+    #'   the `lgb.cv` before the training step
+    nrounds_by_cv = TRUE,
+
+    #' @field cv_folds The number of cross validation folds, when setting
+    #'   `nrounds_by_cv` = TRUE (default: 5).
+    cv_folds = NULL,
+
+    #' @field cv_model The cross validation model.
+    cv_model = NULL,
+
+    #' @field model The trained lightgbm model.
     model = NULL,
 
     # define methods
@@ -81,13 +191,17 @@ LightgbmTrain <- R6::R6Class(
         reticulate::py_module_available("lightgbm")
       )
 
-      # load python module
-      private$lightgbm <- reticulate::import("lightgbm", delay_load = TRUE)
+      self$num_boost_round <- 10L
+
+      self$cv_folds <- 5L
 
       # initialize parameter set
       self$param_set <- lgbparams()
 
-      self$transform_target <- TransformTarget$new(
+      # load python module
+      private$lightgbm <- reticulate::import("lightgbm", delay_load = TRUE)
+
+      self$trans_tar <- TransformTarget$new(
         param_set = self$param_set
       )
 
@@ -108,193 +222,95 @@ LightgbmTrain <- R6::R6Class(
         target_col %in% colnames(dataset)
       )
 
-      self$dataset <- dataset
-      self$target_names <- target_col
-      self$feature_names <- setdiff(
-        c(colnames(self$dataset), id_col),
-        self$target_names
+      private$dataset <- dataset
+      private$target_names <- target_col
+      private$feature_names <- setdiff(
+        c(colnames(private$dataset), id_col),
+        private$target_names
       )
     },
 
-    #' @description The data preprocessing function.
-    #' @param validation_split A numeric. Ratio to further split the training
-    #'   data for validation (default: 0.7). The allowed value range is
-    #'   0 < validation_split <= 1. This parameter can also be set to
-    #'   '1', taking the whole training data for validation during the model
-    #'   training.
-    #' @param split_seed A integer (default: NULL). Please use this argument in
-    #'   order to generate reproducible results.
+    #' @description The train_cv function
     #'
-    data_preprocessing = function(validation_split = 0.7, split_seed = NULL) {
-
-      stopifnot(
-        is.numeric(validation_split),
-        validation_split > 0 && validation_split <= 1,
-        is.numeric(split_seed) || is.null(split_seed)
-      )
-
-      # get parameters
-      self$parameters <- self$param_set$get_values(tags = "train")
-
-      self$dataset[, (self$target_names) :=
-                     self$transform_target$transform_target(
-                       vector = get(self$target_names),
-                       mapping = "dtrain"
-                     )]
-
-      private$validation_split <- validation_split
-
-      if (private$validation_split < 1) {
-
-        train_test_split <- tryCatch(
-          expr = {
-            train_test_split <- sklearn_train_test_split(
-              self$dataset,
-              self$target_names,
-              split = private$validation_split,
-              seed = split_seed,
-              return_only_index = TRUE,
-              stratify = TRUE
-            )
-            train_test_split
-          }, error = function(e) {
-            print(e)
-            message("\nFalling back to splitting without stratification.")
-            train_test_split <- sklearn_train_test_split(
-              self$dataset,
-              self$target_names,
-              split = private$validation_split,
-              seed = split_seed,
-              return_only_index = TRUE,
-              stratify = FALSE
-            )
-            train_test_split
-          }, finally = function(f) {
-            return(train_test_split)
-          }
+    train_cv = function() {
+      if (is.null(self$cv_model)) {
+        message(
+          sprintf(
+            paste0("Optimizing nrounds with %s fold CV."),
+            self$cv_folds
+          )
         )
 
-        # train index
-        train_index <- train_test_split$train_index
+        private$data_preprocessing()
 
-        # validation index
-        valid_index <- train_test_split$test_index
+        private$convert_types()
 
-        # define train_data
-        self$train_data <- self$dataset[
-          train_index, (self$feature_names), with = FALSE
-          ]
-        # define train_label
-        self$train_label <- self$dataset[
-          train_index, get(self$target_names)
-          ]
-
-        # define valid_data
-        self$valid_data <- self$dataset[
-          valid_index, (self$feature_names), with = FALSE
-          ]
-        # define valid_label
-        self$valid_label <- self$dataset[
-          valid_index, get(self$target_names)
-          ]
-
-        # else, data should not be splitted
-      } else {
-        self$train_data <- self$dataset[
-          , (self$feature_names), with = FALSE
-          ]
-        self$train_label <- self$dataset[, get(self$target_names)]
-      }
-    },
-
-    #' @description The training function.
-    #'
-    #' @details All arguments are passed to the train function of python's
-    #'   lightgbm implementation by using R's reticulate package.
-    #'
-    #' @param num_boost_round A integer. The number of boosting iterations
-    #'   (default: 100).
-    #' @param early_stopping_rounds A integer. It will stop training if one
-    #'   metric of one validation data doesn’t improve in last
-    #'   `early_stopping_round` rounds. '0' means disable (default: 0).
-    #' @param feval Customized evaluation function (default: NULL).
-    #' @param verbose_eval A integer. The eval metric on the valid set is
-    #'   printed at every verbose_eval boosting stage (default: 50).
-    #'
-    train = function(num_boost_round = 100,
-                     early_stopping_rounds = 0,
-                     feval = NULL,
-                     verbose_eval = 50) {
-
-      stopifnot(
-        is.numeric(num_boost_round),
-        is.numeric(early_stopping_rounds) ||
-          is.null(early_stopping_rounds),
-        is.numeric(verbose_eval),
-        !is.null(self$train_data),
-        !is.null(self$train_label)
-      )
-
-      num_boost_round <- as.integer(num_boost_round)
-      early_stopping_rounds <- as.integer(early_stopping_rounds)
-      verbose_eval <- as.integer(verbose_eval)
-
-      x_train <- as.matrix(self$train_data)
-      # convert Missings to NaN, otherwise they wil be transformed
-      # wrong to python/ an error occurs
-      x_train <- private$transform_features(x_train)
-
-      x_label <- self$train_label
-      private$label_names <- sort(unique(x_label))
-
-      # extract classification classes
-      if (self$parameters[["objective"]] %in%
-          c("multiclass", "multiclassova", "lambdarank")) {
-        self$parameters[["num_class"]] <- length(private$label_names)
-      }
-
-      # python lightgbm$Dataset
-      train_set <- private$lightgbm$Dataset(
-        data = x_train,
-        label = x_label
-      )
-
-      if (!is.null(self$valid_data)) {
-        x_valid <- as.matrix(self$valid_data)
-        x_valid <- private$transform_features(x_valid)
-
-        x_label_valid <- self$valid_label
-
-        # python lightgbm$Dataset
-        valid_set <- private$lightgbm$Dataset(
-          data = x_valid,
-          label = x_label_valid
-        )
-      } else {
-        valid_set <- train_set
-      }
-
-      # set correct types for parameters
-      for (param in names(self$parameters)) {
-        value <- self$parameters[[param]]
-        if (self$param_set$class[[param]] == "ParamInt") {
-          self$parameters[[param]] <- as.integer(round(value))
-        } else if (self$param_set$class[[param]] == "ParamDbl") {
-          self$parameters[[param]] <- as.numeric(value)
+        # set stratified
+        if (self$param_set$values[["objective"]] %in%
+            c("binary", "multiclass", "multiclassova", "lambdarank")) {
+          stratified <- TRUE
+        } else {
+          stratified <- FALSE
         }
+
+        self$cv_model <- private$lightgbm$cv(
+          params = self$param_set$values,
+          train_set = self$train_data,
+          num_boost_round = self$num_boost_round,
+          nfold = self$cv_folds,
+          #categorical_feature = self$categorical_feature,
+          verbose_eval = 50L,
+          early_stopping_rounds = self$early_stopping_rounds,
+          stratified = stratified
+        )
+
+        helper_cv_names <- names(self$cv_model)
+        cv_mean_name <- helper_cv_names[grepl("mean", helper_cv_names)]
+        best_iter <- length(self$cv_model[[cv_mean_name]])
+        message(
+          sprintf(
+            paste0("CV results: best iter %s; best score: %s"),
+            best_iter,
+            self$cv_model[[cv_mean_name]][[best_iter]][[1]]
+          )
+        )
+        # set nrounds to best iteration from cv-model
+        self$num_boost_round <- as.integer(best_iter)
+        # if we already have figured out the best nrounds, which are provided
+        # to the train function, we don't need early stopping anymore
+        self$early_stopping_rounds <- NULL
+      } else {
+        stop("A CV model has already been trained!")
       }
+    },
 
+    #' @description The train function
+    #'
+    train = function() {
+      if (is.null(self$model)) {
+        if (is.null(self$cv_model) && self$nrounds_by_cv) {
+          self$train_cv()
+        } else {
+          private$data_preprocessing()
+          private$convert_types()
+        }
 
-      # train lightgbm
-      self$model <- private$lightgbm$train(
-        params = self$parameters,
-        train_set = train_set,
-        num_boost_round = num_boost_round,
-        valid_sets = valid_set,
-        feval = feval,
-        early_stopping_rounds = early_stopping_rounds,
-        verbose_eval = verbose_eval
-      )
+        self$model <- private$lightgbm$train(
+          params = self$param_set$values,
+          train_set = self$train_data,
+          num_boost_round = self$num_boost_round,
+          #valid_sets = private$valid_list,
+          #categorical_feature = self$categorical_feature,
+          verbose_eval = 50L,
+          early_stopping_rounds = self$early_stopping_rounds
+        )
+        message(
+          sprintf("Final model: current iter: %s",
+                  self$model$current_iteration())
+        )
+      } else {
+        stop("A model has already been trained!")
+      }
     },
 
     #' @description The predict function.
@@ -304,102 +320,35 @@ LightgbmTrain <- R6::R6Class(
     #'
     #' @param newdata A data.table object holding the data which should be
     #'   predicted.
-    #' @param revalue A logical. If the target variable should be revalued to
-    #'   its original categories (default: FALSE).
-    #' @param reshape A logical. Only in binary classification. If the output
-    #'   is a matrix of two columns with the probabilities for each category.
     #'
-    predict = function(newdata, revalue = FALSE, reshape = FALSE) {
+    predict = function(newdata) {
       stopifnot(
         data.table::is.data.table(newdata),
         !is.null(self$model)
       )
 
-      outlist <- list()
+      newdata <- newdata[, private$feature_names, with = F] # get newdata
 
-      pred_data <- newdata[, self$feature_names, with = F] # get newdata
-      # transform it
-      x_test <- as.matrix(pred_data)
+      x_test <- as.matrix(newdata)
+      # convert Missings to NaN, otherwise they wil be transformed
+      # wrong to python/ an error occurs
       x_test <- private$transform_features(x_test)
 
-      for (i in colnames(x_test)) {
-        x_test[which(is.na(x_test[, i])), i] <- NaN
-      }
-
-      probs <- self$model$predict(
+      # create lgb.Datasets
+      private$test_input <- private$lightgbm$Dataset(
         data = x_test,
+        reference = private$input_rules
+      )
+
+      test_data <- as.matrix(private$test_input$data)
+
+      p <- self$model$predict(
+        data = test_data,
         is_reshape = TRUE
       )
 
-      if (self$parameters[["objective"]] %in%
-          c("multiclass", "multiclassova", "lambdarank")) {
-        colnames(probs) <- as.character(unique(private$label_names))
-
-        if (revalue) {
-          # process target variable
-          c_names <- colnames(probs)
-          c_names <- plyr::revalue(
-            x = c_names,
-            replace = self$transform_target$value_mapping_dtrain
-          )
-          colnames(probs) <- c_names
-        }
-        outlist <- list("probabilities" = probs)
-
-        private$classes <- sapply(seq_len(nrow(probs)), function(x) {
-          ret <- colnames(probs)[which(probs[x, ] ==
-                                         max(probs[x, ]))]
-          return(ret)
-        })
-        if (revalue) {
-          outlist <- c(outlist, list("classes" = private$classes))
-        } else {
-          outlist <- c(outlist, list("classes" = as.integer(private$classes)))
-        }
-
-      } else if (self$parameters[["objective"]] == "binary") {
-        private$classes <- as.integer(ifelse(probs > 0.5, 1, 0))
-
-        if (reshape) {
-          probs <- cbind(
-            "0" = 1 - probs,
-            "1" = probs
-          )
-        }
-
-        if (revalue) {
-          if (reshape) {
-            c_names <- colnames(probs)
-            c_names <- plyr::revalue(
-              x = c_names,
-              replace = self$transform_target$value_mapping_dtrain
-            )
-            colnames(probs) <- c_names
-          }
-          private$classes <- plyr::revalue(
-            x = as.character(private$classes),
-            replace = self$transform_target$value_mapping_dtrain
-          )
-        }
-
-        outlist <- list("probabilities" = probs)
-        outlist <- c(outlist, list("classes" = private$classes))
-      }
-
-      if (length(outlist) < 2) {
-        outlist <- list("response" = probs)
-      }
-
-      return(outlist)
+      return(p)
     },
-
-    #' @field transform_target The function is used internally,
-    #'   to transform the target
-    #'   variable to meet LightGBMs requirements. It can also be used,
-    #'   to transform the yet untransformed target variable of a holdout
-    #'   dataset.
-    #'
-    transform_target = NULL,
 
     # Add method for importance, if learner supports that.
     # It must return a sorted (decreasing) numerical, named vector.
@@ -417,7 +366,7 @@ LightgbmTrain <- R6::R6Class(
 
       # importance dataframe
       imp <- data.table::data.table(
-        "Feature" = self$feature_names,
+        "Feature" = private$feature_names,
         "Value" = as.numeric(
           as.character(self$model$feature_importance())
         )

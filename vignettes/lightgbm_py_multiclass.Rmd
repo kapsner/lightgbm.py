@@ -74,10 +74,10 @@ table(dataset[split$test_index, target_col, with = F])
 
 # Instantiate the lightgbm learner 
 
-Initially, the LightgbmTrain class needs to be instantiated: 
+Initially, the LightGBM class needs to be instantiated: 
 
 ```{r}
-lgb_learner <- LightgbmTrain$new()
+lgb_learner <- LightGBM$new()
 lgb_learner$init_data(
   dataset = dataset[split$train_index, ],
   target_col = target_col,
@@ -104,64 +104,50 @@ lgb_learner$param_set$values <- list(
 )
 ```
 
-When the learner's objective is set, the data preprocessing step can be performed by using the learner's function `data_preprocessing`. This function takes two arguments, `validation_split` (default = 0.7) and `split_seed` (defaul: NULL). 
-`validation_split` can be set in order to further split the training data and evaluate the model performance during training against the validation set. The allowed value range is 0 < validation_split <= 1. This parameter can also be set to "1", taking the whole training data for validation during the model training. For reproducibility, please use the `split_seed` argument. 
-
-```{r}
-lgb_learner$data_preprocessing(validation_split = 0.7, split_seed = 2)
-```
-
 # Train the learner 
 
 The learner is now ready to be trained by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
 
 ```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
-lgb_learner$train(
-  num_boost_round = 5000,
-  early_stopping_rounds = 100
-)
+lgb_learner$num_boost_round <- 5000
+lgb_learner$early_stopping_rounds <- 100
+lgb_learner$train()
 ```
 
 # Evaluate the model performance 
 
-Basic metrics can be assesed directly from the python model: 
-
-```{r}
-lgb_learner$model$best_iteration
-lgb_learner$model$best_score$valid_0
-```
-
 The learner's `predict` function returns a list object, which consists of the predicted probabilities for each class and the predicted class labels: 
 
 ```{r}
-predictions <- lgb_learner$predict(newdata = dataset[split$test_index, ])
-head(predictions$probabilities)
+predictions <- lgb_learner$predict(newdata = dataset[split$test_index,])
+head(predictions)
 ```
 
-In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation. 
+In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation. The value mappings are stored in the learner's object `value_mapping`:
 
 ```{r}
-# befor transformation
-head(dataset[split$test_index, get(lgb_learner$target_names)])
+# before transformation
+head(dataset[split$test_index, get(target_col)])
 
 # use the learners transform_target-method
-target_test <- lgb_learner$transform_target$transform_target(
-  vector = dataset[split$test_index, get(lgb_learner$target_names)],
+target_test <- lgb_learner$trans_tar$transform_target(
+  vector = dataset[split$test_index, get(target_col)],
   mapping = "dvalid"
 )
 # after transformation
 head(target_test)
+
+lgb_learner$trans_tar$value_mapping_dvalid
 ```
 
-This transformation of the test set's target variable is not necessary when using the `revalue` argument of the learner's `predict` function. The value mappings are stored in the learner's object `value_mapping`:
-
 ```{r}
-head(
-  lgb_learner$predict(
-    newdata = dataset[split$test_index, ],
-    revalue = TRUE
-   )$classes)
-lgb_learner$transform_target$value_mapping_dvalid
+# revalue the predictions
+colnames(predictions) <- c(0, 1, 2)
+pred_classes <- sapply(seq_len(nrow(predictions)), function(x) {
+  ret <- colnames(predictions)[which(predictions[x, ] ==
+                                       max(predictions[x, ]))]
+  return(ret)
+})
 ```
 
 Now, several model metrics can be calculated:
@@ -169,15 +155,15 @@ Now, several model metrics can be calculated:
 ```{r}
 MLmetrics::ConfusionMatrix(
   y_true = target_test,
-  y_pred = predictions$classes
+  y_pred = pred_classes
 )
 MLmetrics::Accuracy(
   y_true = target_test,
-  y_pred = predictions$classes
+  y_pred = pred_classes
 )
 MLmetrics::MultiLogLoss(
   y_true = target_test,
-  y_pred = predictions$probabilities
+  y_pred = predictions
 )
 ```
 
