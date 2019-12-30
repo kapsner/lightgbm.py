@@ -1,6 +1,6 @@
-#' @title R6 LightGBM train function
+#' @title R6 LightGBM function
 #'
-#' @description A wrapper around the lightgbm.train python class.
+#' @description A wrapper around the lightgbm python api.
 #'
 #' @references \url{https://lightgbm.readthedocs.io}
 #'
@@ -40,6 +40,14 @@ LightGBM <- R6::R6Class(
       self$num_boost_round <- as.integer(self$num_boost_round)
       self$early_stopping_rounds <- as.integer(self$early_stopping_rounds)
       self$cv_folds <- as.integer(self$cv_folds)
+
+      if (is.null(self$categorical_feature)) {
+        self$categorical_feature <- "auto"
+      } else {
+        stopifnot(
+          is.list(self$categorical_feature)
+        )
+      }
 
       # set correct types for parameters
       for (param in names(self$param_set$values)) {
@@ -96,7 +104,7 @@ LightGBM <- R6::R6Class(
 
         # if a validation set is provided, check if value mappings are
         # identical
-        if (!is.null(private$valid_input)) {
+        if (!is.null(self$valid_data)) {
           stopifnot(
             identical(
               self$trans_tar$value_mapping_dtrain,
@@ -128,6 +136,16 @@ LightGBM <- R6::R6Class(
       )
       if (is.null(private$input_rules)) {
         private$input_rules <- self$train_data
+      }
+
+      # add to training data to validation set:
+      if (is.null(private$valid_list)) {
+        private$valid_list <- list(self$train_data)
+      } else {
+        private$valid_list <- c(
+          private$valid_list,
+          list(self$train_data)
+        )
       }
     }
   ),
@@ -236,7 +254,7 @@ LightGBM <- R6::R6Class(
       if (is.null(self$cv_model)) {
         message(
           sprintf(
-            paste0("Optimizing nrounds with %s fold CV."),
+            paste0("Optimizing num_boost_round with %s fold CV."),
             self$cv_folds
           )
         )
@@ -258,8 +276,9 @@ LightGBM <- R6::R6Class(
           train_set = self$train_data,
           num_boost_round = self$num_boost_round,
           nfold = self$cv_folds,
-          #categorical_feature = self$categorical_feature,
-          verbose_eval = 50L,
+          feature_name = private$feature_names,
+          categorical_feature = self$categorical_feature,
+          verbose_eval = 10L,
           early_stopping_rounds = self$early_stopping_rounds,
           stratified = stratified
         )
@@ -279,6 +298,9 @@ LightGBM <- R6::R6Class(
         # if we already have figured out the best nrounds, which are provided
         # to the train function, we don't need early stopping anymore
         self$early_stopping_rounds <- NULL
+
+        self$nrounds_by_cv <- FALSE
+
       } else {
         stop("A CV model has already been trained!")
       }
@@ -290,7 +312,7 @@ LightGBM <- R6::R6Class(
       if (is.null(self$model)) {
         if (is.null(self$cv_model) && self$nrounds_by_cv) {
           self$train_cv()
-        } else {
+        } else if (is.null(self$cv_model) && isFALSE(self$nrounds_by_cv)) {
           private$data_preprocessing()
           private$convert_types()
         }
@@ -299,9 +321,10 @@ LightGBM <- R6::R6Class(
           params = self$param_set$values,
           train_set = self$train_data,
           num_boost_round = self$num_boost_round,
-          #valid_sets = private$valid_list,
-          #categorical_feature = self$categorical_feature,
-          verbose_eval = 50L,
+          valid_sets = private$valid_list,
+          feature_name = private$feature_names,
+          categorical_feature = self$categorical_feature,
+          verbose_eval = 10L,
           early_stopping_rounds = self$early_stopping_rounds
         )
         message(
@@ -396,6 +419,44 @@ LightGBM <- R6::R6Class(
         list("raw_values" = imp,
              "plot" = imp_plot)
       )
+    },
+
+    #' @description The valids function
+    #'
+    #' @details The function can be used to provide a subsample to the data
+    #'   to the lightgbm's train function's `valids` argument. This is e.g.
+    #'   needed, when the argument `early_stopping_rounds` is used.
+    #'
+    #' @param validset A data.table object, containing the validation data.
+    #'
+    valids = function(validset) {
+
+      if (!is.null(private$target_names) &&
+          !is.null(private$feature_names)) {
+
+        # create label
+        self$valid_label <- self$trans_tar$transform_target(
+          vector = validset[, get(private$target_names)],
+          mapping = "dvalid"
+        )
+
+        # create lgb.Datasets
+        x_valid <- as.matrix(validset[, private$feature_names, with = F])
+        # convert Missings to NaN, otherwise they wil be transformed
+        # wrong to python/ an error occurs
+        x_valid <- private$transform_features(x_valid)
+        self$valid_data <- private$lightgbm$Dataset(
+          data = x_valid,
+          label = self$valid_label,
+          free_raw_data = FALSE
+        )
+
+        private$input_rules <- self$valid_data
+
+        private$valid_list <- list(self$valid_data)
+      } else {
+        stop("Please initialize the training dataset first.")
+      }
     }
   )
 )

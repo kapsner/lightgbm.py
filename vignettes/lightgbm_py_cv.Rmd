@@ -1,0 +1,136 @@
+---
+title: "lightgbm.py: Cross-validation Example"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    keep_md: true
+vignette: >
+  %\VignetteIndexEntry{lightgbm_py_cv}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r setup}
+library(lightgbm.py)
+library(mlbench)
+```
+
+# Introduction  
+
+There are several ways to perform cross validation (CV) with this lightgbm implementation. To start this example, let's create a dataset a split into training data (`split$train_index`) and validation data (`split$test_index`). 
+
+```{r}
+data("PimaIndiansDiabetes2")
+dataset <- data.table::as.data.table(PimaIndiansDiabetes2)
+target_col <- "diabetes"
+id_col <- NULL
+
+split <- sklearn_train_test_split(
+  dataset,
+  target_col,
+  split = 0.7,
+  seed = 17,
+  return_only_index = TRUE,
+  stratify = TRUE
+)
+table(dataset[split$train_index, target_col, with = F])
+table(dataset[split$test_index, target_col, with = F])
+```
+
+We then have to also set basic parameters of the instantiated learner.  
+
+```{r}
+# instantiate the learner
+lgb_learner <- LightGBM$new()
+
+# initialize the training data
+lgb_learner$init_data(
+  dataset = dataset[split$train_index, ],
+  target_col = target_col,
+  id_col = id_col
+)
+
+# set basic parameters
+lgb_learner$param_set$values <- list(
+  "objective" = "binary",
+  "learning_rate" = 0.01,
+  "seed" = 17,
+  "metric" = "auc"
+)
+```
+
+# Optimizing num_boost_round with CV  
+
+Using the default settings, a 5-fold CV is used to find the optimal number of `num_boost_round`. `num_boost_round` is set here to specify the maximal number of boosting iterations. `early_stopping_rounds` is set to specify the number of boosting iterations after which the training is stopped, if the metric does not improve anymore. 
+
+```{r}
+lgb_learner$num_boost_round <- 5000
+lgb_learner$early_stopping_rounds <- 1000
+lgb_learner$train()
+```
+
+The number of folds of the CV can also be specified:
+
+```{r}
+lgb_learner$cv_folds <- 10
+```
+
+It is also possible to perform the CV manually, using the `train_cv` function:
+
+```{r}
+lgb_learner$num_boost_round <- 5000
+lgb_learner$early_stopping_rounds <- 1000
+lgb_learner$train_cv()
+```
+
+Please note that in this case, the learner automatically adjusts the parameter `num_boost_round` for the subsequent training step:
+
+```{r}
+lgb_learner$num_boost_round
+```
+
+The training can then be performed, using the `train` function:
+
+```{r}
+lgb_learner$train()
+```
+
+# Using a validation set  
+
+The optimal number of `num_boost_round` can also be found by using a validation dataset. Therefore, this implementation provides the function `valids`. However, you need to instantiate the learner first, initialize the training data and provide at least the learner's objective parameter as described above.  
+Then you can switch off the default CV setting by setting the field `nrounds_by_cv = FALSE`: 
+
+```{r}
+lgb_learner$nrounds_by_cv <- FALSE
+```
+
+Next, you can pass the validation dataset to the the function: 
+
+```{r}
+lgb_learner$valids(validset = dataset[split$test_index, ])
+```
+
+The validation data and validation label can now be inspected: 
+
+```{r}
+head(lgb_learner$valid_data$data)
+head(lgb_learner$valid_label)
+```
+
+Again, `num_boost_round` and `early_stopping_rounds` are set to specify the limits of the boosting process. Then the `train` function can be executed:  
+
+```{r}
+lgb_learner$num_boost_round <- 5000
+lgb_learner$early_stopping_rounds <- 1000
+lgb_learner$train()
+```

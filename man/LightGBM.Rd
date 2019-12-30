@@ -2,9 +2,9 @@
 % Please edit documentation in R/lightgbm_train.R
 \name{LightGBM}
 \alias{LightGBM}
-\title{R6 LightGBM train function}
+\title{R6 LightGBM function}
 \description{
-A wrapper around the lightgbm.train python class.
+A wrapper around the lightgbm python api.
 }
 \references{
 \url{https://lightgbm.readthedocs.io}
@@ -58,6 +58,7 @@ the `lgb.cv` before the training step}
 \item \href{#method-train}{\code{LightGBM$train()}}
 \item \href{#method-predict}{\code{LightGBM$predict()}}
 \item \href{#method-importance}{\code{LightGBM$importance()}}
+\item \href{#method-valids}{\code{LightGBM$valids()}}
 \item \href{#method-clone}{\code{LightGBM$clone()}}
 }
 }
@@ -152,6 +153,28 @@ shown in the importance plot (default: 20).}
 }
 \subsection{Details}{
 Exports the model's variable importance.
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-valids"></a>}}
+\subsection{Method \code{valids()}}{
+The valids function
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{LightGBM$valids(validset)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{validset}}{A data.table object, containing the validation data.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Details}{
+The function can be used to provide a subsample to the data
+  to the lightgbm's train function's `valids` argument. This is e.g.
+  needed, when the argument `early_stopping_rounds` is used.
 }
 
 }

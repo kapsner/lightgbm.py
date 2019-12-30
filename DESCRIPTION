@@ -1,6 +1,6 @@
 Package: lightgbm.py
 Title: Use Python's LightGBM Module in R
-Version: 0.0.0.9000
+Version: 0.0.1.9000
 Authors@R: 
     person(given = "Lorenz A.",
            family = "Kapsner",
@@ -13,8 +13,15 @@ LazyData: true
 URL: https://github.com/kapsner/lightgbm.py
 BugReports: https://github.com/kapsner/lightgbm.py/issues
 Encoding: UTF-8
-Date: 2019-12-19
+Date: 2019-12-30
 VignetteBuilder: knitr
+Config/reticulate: 
+ list(
+    packages = list(
+      list(package = "lightgbm"),
+      list(package = "scikit-learn")
+    )
+  )
 Depends: 
     R (>= 2.10)
 Imports: 
@@ -32,11 +39,4 @@ Suggests:
     qpdf,
     mlbench,
     MLmetrics
-Config/reticulate:
-    list(
-        packages = list(
-            list(package = "lightgbm"),
-            list(package = "scikit-learn")
-        )
-    )
 RoxygenNote: 7.0.2

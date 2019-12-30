@@ -19,7 +19,7 @@ my_desc$set_authors(c(
 my_desc$del("Maintainer")
 
 # Set the version
-my_desc$set_version("0.0.0.9000")
+my_desc$set_version("0.0.1.9000")
 
 # The title of your package
 my_desc$set(Title = "Use Python's LightGBM Module in R")
@@ -39,6 +39,16 @@ my_desc$set("VignetteBuilder" = "knitr")
 
 # License
 my_desc$set("License", "GPL-3")
+
+# Reticulate
+my_desc$set(
+  "Config/reticulate",
+  "\nlist(
+    packages = list(
+      list(package = \"lightgbm\"),
+      list(package = \"scikit-learn\")
+    )
+  )")
 
 # Save everyting
 my_desc$write(file = "DESCRIPTION")
