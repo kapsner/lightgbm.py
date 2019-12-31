@@ -81,14 +81,11 @@ LightGBM <- R6::R6Class(
 
     #' @description The data_preprocessing function.
     #'
-    data_preprocessing = function() {
+    data_preprocessing = function(data) {
 
       stopifnot(
         !is.null(self$param_set$values[["objective"]])
       )
-
-      # extract data
-      data <- private$dataset
 
       # create training label
       self$train_label <- self$trans_tar$transform_target(
@@ -188,7 +185,7 @@ LightGBM <- R6::R6Class(
 
     #' @field nrounds_by_cv A logical. Calculate the best nrounds by using
     #'   the `lgb.cv` before the training step
-    nrounds_by_cv = TRUE,
+    nrounds_by_cv = NULL,
 
     #' @field cv_folds The number of cross validation folds, when setting
     #'   `nrounds_by_cv` = TRUE (default: 5).
@@ -212,6 +209,8 @@ LightGBM <- R6::R6Class(
       self$num_boost_round <- 10L
 
       self$cv_folds <- 5L
+
+      self$nrounds_by_cv <- TRUE
 
       # initialize parameter set
       self$param_set <- lgbparams()
@@ -251,90 +250,79 @@ LightGBM <- R6::R6Class(
     #' @description The train_cv function
     #'
     train_cv = function() {
-      if (is.null(self$cv_model)) {
-        message(
-          sprintf(
-            paste0("Optimizing num_boost_round with %s fold CV."),
-            self$cv_folds
-          )
+      message(
+        sprintf(
+          paste0("Optimizing num_boost_round with %s fold CV."),
+          self$cv_folds
         )
+      )
 
-        private$data_preprocessing()
+      private$data_preprocessing(private$dataset)
 
-        private$convert_types()
+      private$convert_types()
 
-        # set stratified
-        if (self$param_set$values[["objective"]] %in%
-            c("binary", "multiclass", "multiclassova", "lambdarank")) {
-          stratified <- TRUE
-        } else {
-          stratified <- FALSE
-        }
-
-        self$cv_model <- private$lightgbm$cv(
-          params = self$param_set$values,
-          train_set = self$train_data,
-          num_boost_round = self$num_boost_round,
-          nfold = self$cv_folds,
-          feature_name = private$feature_names,
-          categorical_feature = self$categorical_feature,
-          verbose_eval = 10L,
-          early_stopping_rounds = self$early_stopping_rounds,
-          stratified = stratified
-        )
-
-        helper_cv_names <- names(self$cv_model)
-        cv_mean_name <- helper_cv_names[grepl("mean", helper_cv_names)]
-        best_iter <- length(self$cv_model[[cv_mean_name]])
-        message(
-          sprintf(
-            paste0("CV results: best iter %s; best score: %s"),
-            best_iter,
-            self$cv_model[[cv_mean_name]][[best_iter]][[1]]
-          )
-        )
-        # set nrounds to best iteration from cv-model
-        self$num_boost_round <- as.integer(best_iter)
-        # if we already have figured out the best nrounds, which are provided
-        # to the train function, we don't need early stopping anymore
-        self$early_stopping_rounds <- NULL
-
-        self$nrounds_by_cv <- FALSE
-
+      # set stratified
+      if (self$param_set$values[["objective"]] %in%
+          c("binary", "multiclass", "multiclassova", "lambdarank")) {
+        stratified <- TRUE
       } else {
-        stop("A CV model has already been trained!")
+        stratified <- FALSE
       }
+
+      self$cv_model <- private$lightgbm$cv(
+        params = self$param_set$values,
+        train_set = self$train_data,
+        num_boost_round = self$num_boost_round,
+        nfold = self$cv_folds,
+        feature_name = private$feature_names,
+        categorical_feature = self$categorical_feature,
+        verbose_eval = 10L,
+        early_stopping_rounds = self$early_stopping_rounds,
+        stratified = stratified
+      )
+
+      helper_cv_names <- names(self$cv_model)
+      cv_mean_name <- helper_cv_names[grepl("mean", helper_cv_names)]
+      best_iter <- length(self$cv_model[[cv_mean_name]])
+      message(
+        sprintf(
+          paste0("CV results: best iter %s; best score: %s"),
+          best_iter,
+          self$cv_model[[cv_mean_name]][[best_iter]][[1]]
+        )
+      )
+      # set nrounds to best iteration from cv-model
+      self$num_boost_round <- as.integer(best_iter)
+      # if we already have figured out the best nrounds, which are provided
+      # to the train function, we don't need early stopping anymore
+      self$early_stopping_rounds <- NULL
     },
 
     #' @description The train function
     #'
     train = function() {
-      if (is.null(self$model)) {
-        if (is.null(self$cv_model) && self$nrounds_by_cv) {
-          self$train_cv()
-        } else if (is.null(self$cv_model) && isFALSE(self$nrounds_by_cv)) {
-          private$data_preprocessing()
-          private$convert_types()
-        }
-
-        self$model <- private$lightgbm$train(
-          params = self$param_set$values,
-          train_set = self$train_data,
-          num_boost_round = self$num_boost_round,
-          valid_sets = private$valid_list,
-          feature_name = private$feature_names,
-          categorical_feature = self$categorical_feature,
-          verbose_eval = 10L,
-          early_stopping_rounds = self$early_stopping_rounds
-        )
-        message(
-          sprintf("Final model: current iter: %s",
-                  self$model$current_iteration())
-        )
-        return(self$model)
-      } else {
-        stop("A model has already been trained!")
+      if (self$nrounds_by_cv) {
+        self$train_cv()
+      } else if (isFALSE(self$nrounds_by_cv)) {
+        private$data_preprocessing(private$dataset)
+        private$convert_types()
       }
+
+      self$model <- private$lightgbm$train(
+        params = self$param_set$values,
+        train_set = self$train_data,
+        num_boost_round = self$num_boost_round,
+        valid_sets = private$valid_list,
+        feature_name = private$feature_names,
+        categorical_feature = self$categorical_feature,
+        verbose_eval = 10L,
+        early_stopping_rounds = self$early_stopping_rounds
+      )
+      message(
+        sprintf("Final model: current iter: %s",
+                self$model$current_iteration())
+      )
+      return(self$model)
     },
 
     #' @description The predict function.
