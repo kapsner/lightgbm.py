@@ -331,6 +331,7 @@ LightGBM <- R6::R6Class(
           sprintf("Final model: current iter: %s",
                   self$model$current_iteration())
         )
+        return(self$model)
       } else {
         stop("A model has already been trained!")
       }
