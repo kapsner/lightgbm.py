@@ -366,21 +366,24 @@ LightGBM <- R6::R6Class(
     #' @description The importance function.
     #'
     #' @param view_max An integer. The maximum number of features to be
-    #'   shown in the importance plot (default: 20).
+    #'   shown in the importance plot (default: Inf).
     #'
     #' @details Exports the model's variable importance.
     #'
-    importance = function(view_max = 20) {
+    importance = function(view_max = Inf) {
       if (is.null(self$model)) {
         stopf("No model stored")
       }
 
+      importance <- as.numeric(
+        as.character(self$model$feature_importance(
+          importance_type = "gain")
+        ))
+
       # importance dataframe
       imp <- data.table::data.table(
         "Feature" = private$feature_names,
-        "Value" = as.numeric(
-          as.character(self$model$feature_importance())
-        )
+        "Value" = importance * 100 / sum(importance)
       )[order(get("Value"), decreasing = T)]
 
       if (nrow(imp) > view_max) {

@@ -52,8 +52,8 @@ lightgbm.py::install_py_lightgbm()
 The data must be provided as a `data.table` object. To simplify the subsequent steps, the target column name and the ID column name are assigned to the variables `target_col` and `id_col`, respectively. 
 
 ```{r}
-data("BostonHousing")
-dataset <- data.table::as.data.table(BostonHousing)
+data("BostonHousing2")
+dataset <- data.table::as.data.table(BostonHousing2)
 target_col <- "medv"
 id_col <- NULL
 ```

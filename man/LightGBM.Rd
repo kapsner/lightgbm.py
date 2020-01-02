@@ -140,14 +140,14 @@ All arguments are passed to the predict function of the created
 \subsection{Method \code{importance()}}{
 The importance function.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{LightGBM$importance(view_max = 20)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{LightGBM$importance(view_max = Inf)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{view_max}}{An integer. The maximum number of features to be
-shown in the importance plot (default: 20).}
+shown in the importance plot (default: Inf).}
 }
 \if{html}{\out{</div>}}
 }
