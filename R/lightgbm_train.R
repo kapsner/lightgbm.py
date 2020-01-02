@@ -128,6 +128,7 @@ LightGBM <- R6::R6Class(
       self$train_data <- private$lightgbm$Dataset(
         data = x_train,
         label = self$train_label,
+        feature_name = private$feature_names,
         free_raw_data = FALSE,
         reference = private$input_rules
       )
@@ -274,7 +275,6 @@ LightGBM <- R6::R6Class(
         train_set = self$train_data,
         num_boost_round = self$num_boost_round,
         nfold = self$cv_folds,
-        feature_name = private$feature_names,
         categorical_feature = self$categorical_feature,
         verbose_eval = 10L,
         early_stopping_rounds = self$early_stopping_rounds,
@@ -313,7 +313,6 @@ LightGBM <- R6::R6Class(
         train_set = self$train_data,
         num_boost_round = self$num_boost_round,
         valid_sets = private$valid_list,
-        feature_name = private$feature_names,
         categorical_feature = self$categorical_feature,
         verbose_eval = 10L,
         early_stopping_rounds = self$early_stopping_rounds
@@ -437,6 +436,7 @@ LightGBM <- R6::R6Class(
         self$valid_data <- private$lightgbm$Dataset(
           data = x_valid,
           label = self$valid_label,
+          feature_name = private$feature_names,
           free_raw_data = FALSE
         )
 
