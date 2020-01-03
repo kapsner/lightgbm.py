@@ -16,6 +16,8 @@ LightGBM <- R6::R6Class(
   private = list(
     # define private objects
 
+    valid_state = NULL,
+
     lightgbm = NULL,
 
     # data: train, valid, test
@@ -37,16 +39,15 @@ LightGBM <- R6::R6Class(
     # convert object types
     # this is necessary, since mlr3 tuning does pass wrong types
     convert_types = function() {
+
       self$num_boost_round <- as.integer(self$num_boost_round)
-      self$early_stopping_rounds <- as.integer(self$early_stopping_rounds)
+      if (!is.null(self$early_stopping_rounds)) {
+        self$early_stopping_rounds <- as.integer(self$early_stopping_rounds)
+      }
       self$cv_folds <- as.integer(self$cv_folds)
 
       if (is.null(self$categorical_feature)) {
         self$categorical_feature <- "auto"
-      } else {
-        stopifnot(
-          is.list(self$categorical_feature)
-        )
       }
 
       # set correct types for parameters
@@ -87,6 +88,9 @@ LightGBM <- R6::R6Class(
         !is.null(self$param_set$values[["objective"]])
       )
 
+      # give param_set to transform target function
+      self$trans_tar$param_set <- self$param_set
+
       # create training label
       self$train_label <- self$trans_tar$transform_target(
         vector = data[, get(private$target_names)],
@@ -111,13 +115,24 @@ LightGBM <- R6::R6Class(
         }
 
         # extract classification classes and set num_class
-        if (length(self$label_names) > 2) {
+        n <- nlevels(factor(data[, get(private$target_names)]))
+        if (n > 2) {
           stopifnot(
             self$param_set$values[["objective"]] %in%
               c("multiclass", "multiclassova", "lambdarank")
           )
-          self$param_set$values[["num_class"]] <- length(self$label_names)
         }
+        # set num_class only in multiclass-objective
+        if (self$param_set$values[["objective"]] == "multiclass") {
+          self$param_set$values[["num_class"]] <- n
+        } else {
+          self$param_set$values <-
+            self$param_set$values[names(self$param_set$values) != "num_class"]
+        }
+      }
+
+      if (isFALSE(private$valid_state)) {
+        private$input_rules <- NULL
       }
 
       # create lgb.Datasets
@@ -125,23 +140,30 @@ LightGBM <- R6::R6Class(
       # convert Missings to NaN, otherwise they wil be transformed
       # wrong to python/ an error occurs
       x_train <- private$transform_features(x_train)
+      colnames(x_train) <- private$feature_names
       self$train_data <- private$lightgbm$Dataset(
         data = x_train,
         label = self$train_label,
-        feature_name = private$feature_names,
-        free_raw_data = FALSE,
-        reference = private$input_rules
+        reference = private$input_rules,
+        free_raw_data = FALSE
       )
+      if (!is.null(self$categorical_feature) &&
+          self$categorical_feature != "auto") {
+        self$train_data$set_feature_name(private$feature_names)
+      }
+
       if (is.null(private$input_rules)) {
         private$input_rules <- self$train_data
       }
 
       # add to training data to validation set:
-      if (is.null(private$valid_list)) {
-        private$valid_list <- list(self$train_data)
-      } else {
+      if (!is.null(self$valid_data)) {
+        if (!is.null(self$categorical_feature) &&
+            self$categorical_feature != "auto") {
+          self$valid_data$set_feature_name(private$feature_names)
+        }
         private$valid_list <- c(
-          private$valid_list,
+          list(self$valid_data),
           list(self$train_data)
         )
       }
@@ -161,7 +183,7 @@ LightGBM <- R6::R6Class(
     #'   If early stopping occurs, the model will have 'best_iter' field.
     early_stopping_rounds = NULL,
 
-    #' @field categorical_feature A list of str or int. Type int represents
+    #' @field categorical_feature A vector of str or int. Type int represents
     #'   index, type str represents feature names.
     categorical_feature = NULL,
 
@@ -216,12 +238,11 @@ LightGBM <- R6::R6Class(
       # initialize parameter set
       self$param_set <- lgbparams()
 
-      # load python module
-      private$lightgbm <- reticulate::import("lightgbm", delay_load = TRUE)
-
       self$trans_tar <- TransformTarget$new(
         param_set = self$param_set
       )
+
+      private$valid_state <- FALSE
 
     },
 
@@ -246,6 +267,10 @@ LightGBM <- R6::R6Class(
         c(colnames(private$dataset), id_col),
         private$target_names
       )
+
+      # load python module here
+      private$lightgbm <- reticulate::import("lightgbm", delay_load = TRUE)
+
     },
 
     #' @description The train_cv function
@@ -276,7 +301,7 @@ LightGBM <- R6::R6Class(
         num_boost_round = self$num_boost_round,
         nfold = self$cv_folds,
         categorical_feature = self$categorical_feature,
-        verbose_eval = 10L,
+        verbose_eval = 20L,
         early_stopping_rounds = self$early_stopping_rounds,
         stratified = stratified
       )
@@ -314,7 +339,7 @@ LightGBM <- R6::R6Class(
         num_boost_round = self$num_boost_round,
         valid_sets = private$valid_list,
         categorical_feature = self$categorical_feature,
-        verbose_eval = 10L,
+        verbose_eval = 20L,
         early_stopping_rounds = self$early_stopping_rounds
       )
       message(
@@ -380,10 +405,14 @@ LightGBM <- R6::R6Class(
           importance_type = "gain")
         ))
 
+      if (sum(importance) != 0) {
+        importance <- importance * 100 / sum(importance)
+      }
+
       # importance dataframe
       imp <- data.table::data.table(
         "Feature" = private$feature_names,
-        "Value" = importance * 100 / sum(importance)
+        "Value" = importance
       )[order(get("Value"), decreasing = T)]
 
       if (nrow(imp) > view_max) {
@@ -422,6 +451,8 @@ LightGBM <- R6::R6Class(
     #'
     valids = function(validset) {
 
+      private$valid_state <- TRUE
+
       if (!is.null(private$target_names) &&
           !is.null(private$feature_names)) {
 
@@ -436,16 +467,14 @@ LightGBM <- R6::R6Class(
         # convert Missings to NaN, otherwise they wil be transformed
         # wrong to python/ an error occurs
         x_valid <- private$transform_features(x_valid)
+        colnames(x_valid) <- private$feature_names
         self$valid_data <- private$lightgbm$Dataset(
           data = x_valid,
           label = self$valid_label,
-          feature_name = private$feature_names,
           free_raw_data = FALSE
         )
 
         private$input_rules <- self$valid_data
-
-        private$valid_list <- list(self$valid_data)
       } else {
         stop("Please initialize the training dataset first.")
       }

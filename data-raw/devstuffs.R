@@ -19,7 +19,7 @@ my_desc$set_authors(c(
 my_desc$del("Maintainer")
 
 # Set the version
-my_desc$set_version("0.0.1.9000")
+my_desc$set_version("0.0.1.9003")
 
 # The title of your package
 my_desc$set(Title = "Use Python's LightGBM Module in R")
@@ -54,7 +54,7 @@ my_desc$set(
 my_desc$write(file = "DESCRIPTION")
 
 # License
-usethis::use_gpl3_license(name="Lorenz Kapsner")
+#usethis::use_gpl3_license(name="Lorenz Kapsner")
 
 
 # add Imports and Depends

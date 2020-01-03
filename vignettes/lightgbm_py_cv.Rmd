@@ -76,6 +76,8 @@ Using the default settings, a 5-fold CV is used to find the optimal number of `n
 ```{r}
 lgb_learner$num_boost_round <- 5000
 lgb_learner$early_stopping_rounds <- 1000
+#lgb_learner$categorical_feature <- c("pregnant", "age")
+#lgb_learner$categorical_feature <- c(0L, 7L)
 lgb_learner$train()
 ```
 
