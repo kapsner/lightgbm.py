@@ -1,0 +1,194 @@
+---
+title: "lightgbm.py: Multiclass Classification GPU Example"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    keep_md: true
+vignette: >
+  %\VignetteIndexEntry{lightgbm_py_multiclass_gpu}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+dir.create("./png")
+```
+
+```{r setup}
+library(lightgbm.py)
+library(MLmetrics)
+```
+
+# Install the package
+
+Make sure, the reticulate package is configured properly on your system (reticulate version >= 1.14) and is pointing to a python environment. If not, you can e.g. install `miniconda`:
+
+```{r eval=FALSE}
+reticulate::install_miniconda(
+  path = reticulate::miniconda_path(),
+  update = TRUE,
+  force = FALSE
+)
+```
+```{r}
+reticulate::py_config()
+```
+
+Before you can use the `lightgbm.py` package with GPU acceleration, you need to compile the `lightgbm` python package according to [its documentation](https://github.com/microsoft/LightGBM/blob/master/python-package/README.md). 
+You can compile the GPU version on Linux/ in docker with the following commands: 
+
+```{bash}
+pip install lightgbm --install-option=--gpu
+```
+
+# Load the dataset
+
+The data must be provided as a `data.table` object. To simplify the subsequent steps, the target column name and the ID column name are assigned to the variables `target_col` and `id_col`, respectively. 
+
+```{r}
+data("iris")
+dataset <- data.table::as.data.table(iris)
+target_col <- "Species"
+id_col <- NULL
+```
+
+To evaluate the model performance, the dataset is split into a training set and a test set with `sklearn_train_test_split`. This function is a wrapper around python sklearn's [sklearn.model_selection.train_test_split](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) method and ensures a stratified sampling for categorical target variables. 
+
+```{r}
+split <- sklearn_train_test_split(
+  dataset,
+  target_col,
+  split = 0.7,
+  seed = 17,
+  return_only_index = TRUE,
+  stratify = TRUE
+)
+table(dataset[split$train_index, target_col, with = F])
+table(dataset[split$test_index, target_col, with = F])
+```
+
+# Instantiate the lightgbm learner 
+
+Initially, the LightGBM class needs to be instantiated: 
+
+```{r}
+lgb_learner <- LightGBM$new()
+lgb_learner$init_data(
+  dataset = dataset[split$train_index, ],
+  target_col = target_col,
+  id_col = id_col
+)
+```
+
+# Configure the learner 
+
+Next, the learner parameters need to be set. At least, the `objective` parameter needs to be provided! Almost all possible parameters have been implemented here. You can inspect them using the following command: 
+
+```{r eval=FALSE}
+lgb_learner$param_set
+```
+
+In order to use the GPU acceleration, the parameter `device_type = "gpu"` (default: "cpu") needs to be set. According to the [LightGBM parameter manual](https://lightgbm.readthedocs.io/en/latest/Parameters.html), 'it is recommended to use the smaller `max_bin` (e.g. 63) to get the better speed up'. 
+
+```{r}
+lgb_learner$param_set$values <- list(
+  "objective" = "multiclass",
+  "learning_rate" = 0.01,
+  "seed" = 17L,
+  "metric" = "multi_logloss",
+  "device_type" = "gpu",
+  "max_bin" = 63L
+)
+```
+
+# Train the learner 
+
+The learner is now ready to be trained by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
+
+```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
+lgb_learner$num_boost_round <- 5000
+lgb_learner$early_stopping_rounds <- 100
+lgb_learner$train()
+```
+
+# Evaluate the model performance 
+
+The learner's `predict` function returns a list object, which consists of the predicted probabilities for each class and the predicted class labels: 
+
+```{r}
+predictions <- lgb_learner$predict(newdata = dataset[split$test_index,])
+head(predictions)
+```
+
+In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation. The value mappings are stored in the learner's object `value_mapping`:
+
+```{r}
+# before transformation
+head(dataset[split$test_index, get(target_col)])
+
+# use the learners transform_target-method
+target_test <- lgb_learner$trans_tar$transform_target(
+  vector = dataset[split$test_index, get(target_col)],
+  mapping = "dvalid"
+)
+# after transformation
+head(target_test)
+
+lgb_learner$trans_tar$value_mapping_dvalid
+```
+
+```{r}
+# revalue the predictions
+colnames(predictions) <- c(0, 1, 2)
+pred_classes <- sapply(seq_len(nrow(predictions)), function(x) {
+  ret <- colnames(predictions)[which(predictions[x, ] ==
+                                       max(predictions[x, ]))]
+  return(ret)
+})
+```
+
+Now, several model metrics can be calculated:
+
+```{r}
+MLmetrics::ConfusionMatrix(
+  y_true = target_test,
+  y_pred = pred_classes
+)
+MLmetrics::Accuracy(
+  y_true = target_test,
+  y_pred = pred_classes
+)
+MLmetrics::MultiLogLoss(
+  y_true = target_test,
+  y_pred = predictions
+)
+```
+
+The variable importance plot can be calculated by using the learner's `importance` function: 
+
+```{r}
+imp <- lgb_learner$importance()
+imp$raw_values
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
+filename <- "./png/lgb.py_imp_multiclass.png"
+grDevices::png(
+    filename = filename,
+    res = 150,
+    height = 1000,
+    width = 1500
+  )
+print(imp$plot)
+grDevices::dev.off()
+```
+```{r out.width='80%'}
+knitr::include_graphics(filename)
+```
+

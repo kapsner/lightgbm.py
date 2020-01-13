@@ -11,9 +11,12 @@ The [original LightGBM R package](https://github.com/microsoft/LightGBM/tree/mas
 
 The code of `lightgbm.py` is implemented using the [R6](https://github.com/r-lib/R6) class for object oriented programming in R. 
 
-Currently, only the python module's `train` function is implemented. 
+# Features 
 
-## Installation
+* integrated native cross-validation (CV) step before the actual model training to find the optimal `num_boost_round` for the given training data and parameter set  
+* GPU support  
+
+# Installation
 
 You can install the development version of `lightgbm.py` with:
 
@@ -22,9 +25,9 @@ install.packages("devtools")
 devtools::install_github("kapsner/lightgbm.py")
 ```
 
-## Example
+# Example
 
-This is a basic example which shows you how to create a binary classifier. For further details please view the package's vignettes. 
+This is a basic example which shows you how to create a binary classifier. For further details please view the [package vignettes](vignettes/). 
 
 ``` r
 library(lightgbm.py)
@@ -33,7 +36,7 @@ library(mlbench)
 
 ## Prerequisites
 
-Before you can start using the `lightgbm.py` package, make sure, the reticulate R package is configured properly on your system (reticulate version >= 1.14) and is pointing to a python environment. If not, you can e.g. install `miniconda`:
+Before you can start using the `lightgbm.py` package, make sure, the `reticulate` R package is configured properly on your system (`reticulate` version >= 1.14) and is pointing to a python environment. If not, you can e.g. install `miniconda`:
 
 ```r
 reticulate::install_miniconda(
@@ -75,7 +78,7 @@ split <- lightgbm.py::sklearn_train_test_split(
 
 ## Instantiate the lightgbm learner 
 
-Initially, the LightgbmTrain class needs to be instantiated: 
+Initially, the LightGBM class needs to be instantiated: 
 
 ```r
 lgb_learner <- LightGBM$new(
@@ -125,7 +128,7 @@ head(predictions)
 
 In order to calculate the model metrics, the test's set target variable has to be transformed accordingly to the learner's target variable's transformation. The value mappings are stored in the learner's object `value_mapping`:
 
-```{r}
+```r
 # before transformation
 head(dataset[split$test_index, get(target_col)])
 
@@ -165,7 +168,34 @@ imp$raw_values
 plot(imp$plot)
 ```
 
-For further information and examples, please view the `lightgbm.py` package vignettes.  
+For further information and examples, please view the `lightgbm.py` [package vignettes](vignettes/).  
+
+# GPU acceleration
+
+The `lightgbm.py` can also be used with lightgbm's GPU compiled version.
+
+To install the lightgbm python package with GPU support, execute the following commands ([lightgbm manual](https://github.com/microsoft/LightGBM/blob/master/python-package/README.md)):
+
+```bash
+pip install lightgbm --install-option=--gpu
+```
+
+In order to use the GPU acceleration, the parameter `device_type = "gpu"` (default: "cpu") needs to be set. According to the [LightGBM parameter manual](https://lightgbm.readthedocs.io/en/latest/Parameters.html), 'it is recommended to use the smaller `max_bin` (e.g. 63) to get the better speed up'. 
+
+```r
+lgb_learner$param_set$values <- list(
+  "objective" = "multiclass",
+  "learning_rate" = 0.01,
+  "seed" = 17L,
+  "metric" = "multi_logloss",
+  "device_type" = "gpu",
+  "max_bin" = 63L
+)
+```
+
+All other steps are similar to the workflow without GPU support. 
+
+The GPU support has been tested in a [Docker container](https://github.com/kapsner/docker_images/blob/master/Rdatascience/rdsc_gpu/Dockerfile) running on a Linux 19.10 host, Intel i7, 16 GB RAM, an NVIDIA(R) RTX 2060, CUDA(R) 10.2 and [nvidia-docker](https://github.com/NVIDIA/nvidia-docker). 
 
 # More Infos:
 
