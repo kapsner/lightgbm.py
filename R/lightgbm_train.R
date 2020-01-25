@@ -46,6 +46,12 @@ LightGBM <- R6::R6Class(
       }
       self$cv_folds <- as.integer(self$cv_folds)
 
+      # check for user-changed num_iterations here
+      if (!is.null(self$param_set$values[["num_iterations"]])) {
+        # if yes, pass value to nrounds
+        self$num_boost_round <- self$param_set$values[["num_iterations"]]
+      }
+
       if (is.null(self$categorical_feature)) {
         self$categorical_feature <- "auto"
       }
