@@ -14,6 +14,10 @@ A wrapper around the lightgbm python api.
 \describe{
 \item{\code{num_boost_round}}{Number of training rounds.}
 
+\item{\code{weights_train}}{A vector of numeric values containing weights.}
+
+\item{\code{weights_valid}}{A vector of numeric values containing weights.}
+
 \item{\code{early_stopping_rounds}}{A integer. Activates early stopping.
 Requires at least one validation data and one metric. If there's
 more than one, will check all of them except the training data.

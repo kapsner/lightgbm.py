@@ -158,6 +158,11 @@ LightGBM <- R6::R6Class(
         self$train_data$set_feature_name(private$feature_names)
       }
 
+      if (!is.null(self$weights_train)) {
+        stopifnot(is.numeric(self$weights_train))
+        self$train_data$set_weight(self$weights_train)
+      }
+
       if (is.null(private$input_rules)) {
         private$input_rules <- self$train_data
       }
@@ -181,6 +186,12 @@ LightGBM <- R6::R6Class(
     # define public objects
     #' @field num_boost_round Number of training rounds.
     num_boost_round = NULL,
+
+    #' @field weights_train A vector of numeric values containing weights.
+    weights_train = NULL,
+
+    #' @field weights_valid A vector of numeric values containing weights.
+    weights_valid = NULL,
 
     #' @field early_stopping_rounds A integer. Activates early stopping.
     #'   Requires at least one validation data and one metric. If there's
@@ -479,6 +490,11 @@ LightGBM <- R6::R6Class(
           label = self$valid_label,
           free_raw_data = FALSE
         )
+
+        if (!is.null(self$weights_valid)) {
+          stopifnot(is.numeric(self$weights_valid))
+          self$valid_data$set_weight(self$weights_valid)
+        }
 
         private$input_rules <- self$valid_data
       } else {
