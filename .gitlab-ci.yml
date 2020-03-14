@@ -2,7 +2,7 @@ variables:
   _R_CHECK_CRAN_INCOMING_: "false"
   _R_CHECK_FORCE_SUGGESTS_: "true"
   CI_IMAGE_NAME: "rocker/verse"
-  CI_IMAGE_TAG: "3.6.1"
+  CI_IMAGE_TAG: "3.6.2"
   R_PKG_NAME: "lightgbm.py"
 
 
@@ -73,7 +73,6 @@ build_source_and_binary:
 
 testing:
   stage: build
-  when: on_success
   script:
     - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
     - R -e "devtools::test(pkg = '.')"
@@ -104,7 +103,7 @@ build_vignettes:
   stage: deploy
   script:
     - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
-    #- R -e "reticulate::install_miniconda(path = reticulate::miniconda_path(), update = TRUE, force = FALSE)"
+    - R -e "reticulate::install_miniconda(path = reticulate::miniconda_path(), update = TRUE, force = FALSE)"
     - R -e "devtools::build_vignettes(pkg = '.', clean = FALSE)"
   #after_script:
   #  - git config --global user.name "${GITHUB_USER}"
