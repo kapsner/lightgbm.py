@@ -50,6 +50,12 @@ the `lgb.cv` before the training step}
 \item{\code{cv_model}}{The cross validation model.}
 
 \item{\code{model}}{The trained lightgbm model.}
+
+\item{\code{positive}}{A character string. The positive class for binary
+classification tasks.}
+
+\item{\code{negative}}{A character string. The negative class for binary
+classification tasks.}
 }
 \if{html}{\out{</div>}}
 }

@@ -31,7 +31,9 @@ test_that(
         #% )
       ),
       "tests/testthat" = list(
-        "test-lints.R" = NULL
+        "test-lints.R" = NULL,
+        "test-learner_classification.R" = NULL,
+        "test-learner_regression.R" = NULL
       )
     )
     for (directory in names(lintlist)) {

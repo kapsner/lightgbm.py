@@ -107,6 +107,12 @@ lgb_learner$param_set$values <- list(
 )
 ```
 
+For binary tasks, also the outcome class needs to be specified.  
+
+```r
+lgb_learner$positive <- "pos"
+```
+
 ## Train the learner 
 
 The learner is now ready to be trained by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 

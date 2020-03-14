@@ -21,8 +21,6 @@ LightGBM <- R6::R6Class(
     lightgbm = NULL,
 
     # data: train, valid, test
-    train_input = NULL,
-    valid_input = NULL,
     test_input = NULL,
     input_rules = NULL,
 
@@ -94,12 +92,29 @@ LightGBM <- R6::R6Class(
         !is.null(self$param_set$values[["objective"]])
       )
 
+      if (self$param_set$values[["objective"]] == "binary") {
+
+        lvls <- unique(data[, get(private$target_names)])
+        stopifnot(
+          length(lvls) == 2,
+          !is.null(self$positive)
+        )
+
+        if (is.null(self$negative)) {
+          self$negative <- setdiff(lvls, self$positive)
+        }
+      } else {
+        self$negative <- NULL
+      }
+
       # give param_set to transform target function
       self$trans_tar$param_set <- self$param_set
 
       # create training label
       self$train_label <- self$trans_tar$transform_target(
         vector = data[, get(private$target_names)],
+        positive = self$positive,
+        negative = self$negative,
         mapping = "dtrain"
       )
 
@@ -121,7 +136,7 @@ LightGBM <- R6::R6Class(
         }
 
         # extract classification classes and set num_class
-        n <- nlevels(factor(data[, get(private$target_names)]))
+        n <- data[, nlevels(factor(get(private$target_names)))]
         if (n > 2) {
           stopifnot(
             self$param_set$values[["objective"]] %in%
@@ -236,6 +251,15 @@ LightGBM <- R6::R6Class(
 
     #' @field model The trained lightgbm model.
     model = NULL,
+
+    #' @field positive A character string. The positive class for binary
+    #'   classification tasks.
+    positive = NULL,
+
+    #' @field negative A character string. The negative class for binary
+    #'   classification tasks.
+    negative = NULL,
+
 
     # define methods
     #' @description The initialize function.
@@ -476,6 +500,8 @@ LightGBM <- R6::R6Class(
         # create label
         self$valid_label <- self$trans_tar$transform_target(
           vector = validset[, get(private$target_names)],
+          positive = self$positive,
+          negative = self$negative,
           mapping = "dvalid"
         )
 

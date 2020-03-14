@@ -108,8 +108,8 @@ lgb_learner$param_set$values <- list(
 The learner is now ready to be trained by using its `train` function. The parameters `num_boost_round` and `early_stopping_rounds` can be set here. Please refer to the [LightGBM manual](https://lightgbm.readthedocs.io) for further details these parameters. 
 
 ```{r results='hide', message=FALSE, warning=FALSE, error=FALSE}
-lgb_learner$num_boost_round <- 5000
-lgb_learner$early_stopping_rounds <- 100
+lgb_learner$num_boost_round <- 100
+lgb_learner$early_stopping_rounds <- 10
 lgb_learner$train()
 ```
 

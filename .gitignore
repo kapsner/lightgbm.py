@@ -13,7 +13,7 @@
 !/README.md
 !/tests/
 /.Rhistory
-/*.Rproj
+!/*.Rproj
 /.Rproj*
 /.RData
 inst/doc
