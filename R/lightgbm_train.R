@@ -95,6 +95,8 @@ LightGBM <- R6::R6Class(
       if (self$param_set$values[["objective"]] == "binary") {
 
         lvls <- unique(data[, get(private$target_names)])
+        lvls <- setdiff(lvls, NA)
+
         stopifnot(
           length(lvls) == 2,
           !is.null(self$positive)
@@ -305,8 +307,8 @@ LightGBM <- R6::R6Class(
       private$dataset <- dataset
       private$target_names <- target_col
       private$feature_names <- setdiff(
-        c(colnames(private$dataset), id_col),
-        private$target_names
+        colnames(private$dataset),
+        c(private$target_names, id_col)
       )
 
       # load python module here
