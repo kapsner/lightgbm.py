@@ -5,6 +5,7 @@ test_that(
   code = {
 
     library(mlbench)
+
     data("BostonHousing2")
     dataset <- data.table::as.data.table(BostonHousing2)
 
