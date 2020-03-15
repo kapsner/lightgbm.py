@@ -75,6 +75,8 @@ testing:
   stage: build
   script:
     - R -e "devtools::install_dev_deps(pkg = '.', upgrade = 'always')" # we only need dev_deps for the vignette and testing
+    - R -e "reticulate::install_miniconda(path = reticulate::miniconda_path(), update = TRUE, force = FALSE)"
+    - R -e "devtools::install(pkg = '.', upgrade = 'alway')"
     - R -e "devtools::test(pkg = '.')"
   except:
     refs:
