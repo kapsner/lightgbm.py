@@ -1,6 +1,6 @@
 Package: lightgbm.py
 Title: Use Python's LightGBM Module in R
-Version: 0.0.1.9005
+Version: 0.0.1.9001
 Authors@R: 
     person(given = "Lorenz A.",
            family = "Kapsner",
@@ -13,7 +13,7 @@ LazyData: true
 URL: https://github.com/kapsner/lightgbm.py
 BugReports: https://github.com/kapsner/lightgbm.py/issues
 Encoding: UTF-8
-Date: 2020-03-14
+Date: 2020-03-16
 VignetteBuilder: knitr
 Config/reticulate: 
  list(
@@ -39,4 +39,3 @@ Suggests:
     qpdf,
     mlbench,
     MLmetrics
-RoxygenNote: 7.1.0
