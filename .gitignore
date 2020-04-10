@@ -23,3 +23,5 @@ inst/doc
 doc
 Meta
 /vignettes/png
+!/.lintr
+/.vscode

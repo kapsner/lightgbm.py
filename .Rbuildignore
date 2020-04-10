@@ -5,3 +5,5 @@
 ^\.gitlab-ci\.yml$
 ^doc$
 ^Meta$
+^\.vscode$
+^\.lintr$

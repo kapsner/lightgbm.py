@@ -19,7 +19,7 @@ my_desc$set_authors(c(
 my_desc$del("Maintainer")
 
 # Set the version
-my_desc$set_version("0.0.1.9001")
+my_desc$set_version("0.0.1.9006")
 
 # The title of your package
 my_desc$set(Title = "Use Python's LightGBM Module in R")
@@ -77,6 +77,7 @@ usethis::use_package("data.table", type="Imports")
 usethis::use_package("R6", type="Imports")
 usethis::use_package("ggplot2", type="Imports")
 usethis::use_package("paradox", type="Imports")
+usethis::use_package("plyr", type="Imports")
 usethis::use_package("reticulate", type="Imports", min_version = "1.14")
 
 # Suggests
@@ -97,6 +98,8 @@ usethis::use_package("MLmetrics", type = "Suggests")
 usethis::use_build_ignore("LICENSE.md")
 usethis::use_build_ignore(".gitlab-ci.yml")
 usethis::use_build_ignore("data-raw")
+usethis::use_build_ignore(".vscode")
+usethis::use_build_ignore(".lintr")
 
 # gitignore
 usethis::use_git_ignore("/*")
@@ -120,6 +123,8 @@ usethis::use_git_ignore("!/*.Rproj")
 usethis::use_git_ignore("/.Rproj*")
 usethis::use_git_ignore("/.RData")
 usethis::use_git_ignore("!/.Rbuildignore")
+usethis::use_git_ignore("!/.lintr")
+usethis::use_git_ignore("/.vscode")
 
 # code coverage
 #covr::package_coverage()

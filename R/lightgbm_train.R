@@ -7,10 +7,12 @@
 #'
 #' @import data.table
 #' @import paradox
+#' @importFrom R6 R6Class
+#' @importFrom plyr revalue
 #'
 #' @export
 #% @seealso \code{\link{rstudio/reticulate}}
-LightGBM <- R6::R6Class(
+LightGBM <- R6::R6Class( # nolint
   classname = "LightGBM",
 
   private = list(

@@ -1,4 +1,4 @@
-TransformTarget <- R6::R6Class(
+TransformTarget <- R6::R6Class( # nolint
   "TransformTarget",
 
   public = list(
